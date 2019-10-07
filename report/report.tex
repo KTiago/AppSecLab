@@ -21,7 +21,7 @@
 
 
 \title{\huge\sffamily\bfseries System Description and Risk Analysis}
-\author{w \and x \and y \and z}
+\author{Alexandre Chamber \and Tiago Kieliger \and Dorian Laforest \and Livio Sgier}
 \date{\dots}
 
 
@@ -77,6 +77,12 @@ their relationships.   This description should provide a high-level
 overview of the system, e.g., suitable for managers, that complements
 the more technical description that follows.
 
+\begin{figure}
+  \includegraphics[width=\linewidth]{report/system_architecture.jpg}
+  \caption{System architecture overview}
+  \label{fig:system_architecture}
+\end{figure}
+
 
 \subsection{System Functionality}
 
@@ -120,13 +126,73 @@ You may have additional sections according to your needs.
 
 \subsection{Assets}
 
-Describe the relevant assets and their required security
+\textit{Describe the relevant assets and their required security
   properties. For example, data objects, access restrictions,
   configurations, etc.
+  }
+ 
+We define different assets categorized in families such that physical assets, logical assets or persons.
+
+\subsubsection{Physical Assets}
+As seen before, the system is divided into multiple components in order to simplify the development and maintenance and to increase security.
+
+\textbf{Web Server}: This server runs the \emph{Webserver}. It serves as the entry point for Internet clients and offers an interface to change account data, making issuance and revocation requests. It is located in the Demilitarized Zone (DMZ) of iMovies' corporate network.
+
+\textbf{Certificate Authority Server}: This server runs the \emph{CA Core} application, which is responsible for issuing and revoking certificates. It is located in the Intranet of iMovies.
+
+%It is virtually located in the company's intranet and physically located in the server's bay which is underground. This server is also located in the same rack as the MySQL and backup servers.
+
+\textbf{MySQL server}: This server hosts the \emph{MySQL Database}. It contains employee data, such as names, email addresses and hashed password. However, no certificates are stored in the database. This server is located in the Intranet of iMovies.
+
+\textbf{Backup Server}: This server hosts the \emph{Backup System}. It stores log and configuration information from the different systems. It is also part of the Intranet of iMovies.
+
+TODO: Think more carefully about how to do backups (see slack)
+
+\textbf{Demilitarized Zone (DMZ)}: this internal network is the one where exposed servers will be located. We say exposed servers when those servers are directly facing the internet, that means the web server. A firewall between the internet and the DMZ has the role of filtering data coming from the network to the DMZ. This DMZ is essential for the company's productivity. If it goes down, end-users will not be able to request or revoke certificates anymore. On top of that, administrators will not be able to log in and access the certificate authority data.
+
+\textbf{Internal network} : this network is the Intranet of the company. It hosts the other servers such as the MySQL database, certificate authority and backup servers. This network is also essential for the company's productivity. If it goes down, the end-users will not be able to access the data it stores. This network also contains a L2 switch.
+
+\textbf{Edge Router} : this router is the first element of the system facing the internet. It is locatd on the internet-facing side of the firewall and routes the traffic from the internet to the webserver. 
+
+\textbf{Firewall}: This server hosts our firewall and serves as the entry point to our network. It connects to the router which is the gateway to the Internet.
+
+\textbf{Internet Connectivity}: The router connects to the service provider’s network over fiber and to the server hosting our firewall via Ethernet.
+
+\subsubsection{Logical Assets}
+
+All logical assets mentioned here are software systems running on the various machines of iMovies.
+
+\textbf{Firewall} A software firewall is used to control and restrict the flow of communication across the various systems of iMovies.
+
+\textbf{Certificate Authority} This software is responsible for the issuance and revocation of certificates as requested by the employees of iMovies.
+
+\textbf{Webserver} 
+
+
+
+
+
+\subsubsection{Persons}
+\subsubsection{Intangible Goods}
+
 
 \subsection{Threat Sources}
 
-Name and describe potential threat sources (\emph{not} threats!) including their motivation.
+\textit{Name and describe potential threat sources (\emph{not} threats!) including their motivation.}
+
+\textbf{Nature}: the building is located in the city center. The exterior risks are natural disaster such as earthquakes, lightning and meteors but also include fires.
+
+\textbf{Employees}: we consider here different categories of people that could interact voluntarily in a malicious way with the system in itself. First there is the people allowed to deploy the code and make modifications in the architecture, the engineers. The system administrator, as well as the CA administrator have a direct access to the machines or to the data and should be taken into account. Finally, non-technical employees such as the ones from the cleaning company or the concierge should also be taken into account as they may access rooms where the production servers or the backup servers are located, therefore enabling them to have a physical access on the data.
+
+\textbf{Script kiddies}: as the website is connected to the internet, script kiddies may find it and infer with it using automated tools for a low-complexity attack.
+
+\textbf{Skilled hackers}: as critical data is stored on the server (private keys, certificates), the system is definitely an interesting target for skilled hackers. The data stolen could then be sold for large amount on the deep web or could be used in a malicious way to, for example, steal someone's identity or deliver malicious certificates from the ones stolen.
+
+\textbf{Competitors}: 
+
+\textbf{Governmental agencies}: here is the same reasoning as for skilled hackers. Governmental companies might be interested in stealing private keys or certificates in order to decrypt messages or to forge malicious certificates, starting from a legitimate one. They might be interested because the cost of stealing private keys is potentially lower than brute-forcing or finding the private key from the public one.
+
+\textbf{Malware}: the system is directly exposed to the internet, therefore undirected malware such as worms might attack the system. 
 
 \subsection{Risks Definitions}
 
@@ -249,3 +315,4 @@ No. of threat & Proposed additional countermeasure including expected impact  \\
 %%% mode: latex
 %%% TeX-master: "../../book"
 %%% End: 
+
