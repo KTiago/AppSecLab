@@ -9,6 +9,7 @@
 \usepackage{longtable}
 \usepackage{color}
 \usepackage{framed}
+\usepackage[section]{placeins}
 
 \usepackage{xifthen}
 \newboolean{showbackdoors}
@@ -69,13 +70,17 @@ voice: who (threat source) does what (threat action)?
 
 \section{System Characterization}
 
-\subsection{System Overview}
+\subsection{System Overview}\label{ssec:system_overview}
 
-Describe the system's mission,  the system boundaries,
-and the overall system architecture, including the main subsystems and
-their relationships.   This description should provide a high-level
-overview of the system, e.g., suitable for managers, that complements
-the more technical description that follows.
+%Describe the system's mission,  the system boundaries,
+%and the overall system architecture, including the main subsystems and
+%their relationships.   This description should provide a high-level
+%overview of the system, e.g., suitable for managers, that complements
+%the more technical description that follows.
+
+The main mission of our system is to provide secure e-mail communication to the iMovies company. To do so we use a certificate authority (CA) to provide digital certificates to employees. Those certificates will be used to authenticate the users and to allow email encryption.
+
+The systems boundaries are \dots
 
 \begin{figure}
   \includegraphics[width=\linewidth]{report/system_architecture.jpg}
@@ -83,18 +88,52 @@ the more technical description that follows.
   \label{fig:system_architecture}
 \end{figure}
 
+\FloatBarrier
 
-\subsection{System Functionality}
+As seen in Figure \ref{fig:system_architecture}, the system is composed of 4 major components which will be explained in more details in part \ref{ssec:components}:
+\begin{itemize}
+    \item A DMZ containing the web server.
+    \item The intranet, containing the CA Core server, the MySQL database and the backup server.
+    \item A Firewall separating the DMZ and the Intranet from the Internet.
+    \item The internet, not specifically a part of the system but users should be able to connect to the system from outside the internal company's network.
+\end{itemize}
 
-Describe the system's functions.
+\subsection{System Functionality}\label{ssec:system_func}
 
+%Describe the system's functions.
 
-\subsection{Security Design}
+\subsubsection{Website}
+The users can go to the company's website. From there they can log in using either their credentials stored in the legacy MySQL database or with a valid certificate.
+Once logged in, the user can change its information (last name, first name, email and password), see its certificates, revoke an existing certificate and request a new one.
+
+\subsubsection{Certificate issuing}
+Once a user is connected, the CA can deliver a new certificate to him and offer the possibility to download it in the PKCS\#12 format.
+
+\subsubsection{Certificate revocation}
+A user can revoke a certificate he owns by logging to the website and selecting the certificate he wants to revoke. Once this is done, a new revocation list is published on the website. This list is accessible to all users (logged in or not) on the website.
+
+\subsubsection{CA Administrator interface}
+The CA administrators have a dedicated interface to consult the CA's current state. This state include the number of issued certificates, the number of revoked certificates and the current serial number of the CA. The CA administrator must use their digital certificate to authenticate themselves to this interface.
+
+\subsubsection{Backup of the certificates and private keys}
+All keys and certificates issued by the CA are backed up and stored in an archive.
+
+\subsubsection{System administration and maintenance interface}
+Secure remote interfaces are provided to the administrators of the system. Those interfaces enable the administration and maintenance of each internal components (webserver, firewall, CA Core server, MySQL database and Backup server).
+
+\subsubsection{Other backup and logging}
+A backup of all the different configuration of the systems is done periodically. In addition, logging of all components is done at each components and regrouped on the backup server.
+
+\subsection{Security Design}\label{ssec:security_design}
 
 Describe the system's security design, including access control, key and session management,  and security of data at rest and in transit.
 
+\subsubsection{Access control}
+\subsubsection{Key and session management}
+\subsubsection{Security of data at rest}
+\subsubsection{Security of data in transit}
 
-\subsection{Components}
+\subsection{Components}\label{ssec:components}
 
 List all system components and their interfaces, subdivided, for example, into
   categories such as platforms, applications, data records, etc. For
@@ -125,34 +164,28 @@ You may have additional sections according to your needs.
 \section{Risk Analysis and Security Measures}
 
 \subsection{Assets}
+\label{assets}
 
-\textit{Describe the relevant assets and their required security
-  properties. For example, data objects, access restrictions,
-  configurations, etc.
-  }
- 
-We define different assets categorized in families such that physical assets, logical assets or persons.
+The following sections define different assets categorized in physical assets, logical assets and persons.
 
 \subsubsection{Physical Assets}
-As seen before, the system is divided into multiple components in order to simplify the development and maintenance and to increase security.
+As seen before, the system is divided into multiple components in order to simplify the development and maintenance and to increase security. The following list capture the physical assets:
 
-\textbf{Web Server}: This server runs the \emph{Webserver}. It serves as the entry point for Internet clients and offers an interface to change account data, making issuance and revocation requests. It is located in the Demilitarized Zone (DMZ) of iMovies' corporate network.
+\textbf{Web Server}: This server runs the web server. It serves as the entry point for Internet clients and offers an interface to change account data, making issuance as well as revocation requests. Additionally, the CA administrator can query the state of the Certification Authority via the web server. It is located in the Demilitarized Zone (DMZ) of iMovies' corporate network.
 
-\textbf{Certificate Authority Server}: This server runs the \emph{CA Core} application, which is responsible for issuing and revoking certificates. It is located in the Intranet of iMovies.
+\textbf{Certificate Authority Server}: This server runs the CA Core application, which is responsible for issuing and revoking certificates. It is located in the Intranet of iMovies.
 
-%It is virtually located in the company's intranet and physically located in the server's bay which is underground. This server is also located in the same rack as the MySQL and backup servers.
+\textbf{MySQL server}: This server hosts the MySQL database. It contains employee data, such as names, email addresses and hashed passwords. However, no certificates are stored in the database. This server is located in the Intranet of iMovies.
 
-\textbf{MySQL server}: This server hosts the \emph{MySQL Database}. It contains employee data, such as names, email addresses and hashed password. However, no certificates are stored in the database. This server is located in the Intranet of iMovies.
-
-\textbf{Backup Server}: This server hosts the \emph{Backup System}. It stores log and configuration information from the different systems. It is also part of the Intranet of iMovies.
+\textbf{Backup Server}: This server hosts the backup system. It stores log and configuration information from the different systems. It is also part of the Intranet of iMovies.
 
 TODO: Think more carefully about how to do backups (see slack)
 
-\textbf{Demilitarized Zone (DMZ)}: this internal network is the one where exposed servers will be located. We say exposed servers when those servers are directly facing the internet, that means the web server. A firewall between the internet and the DMZ has the role of filtering data coming from the network to the DMZ. This DMZ is essential for the company's productivity. If it goes down, end-users will not be able to request or revoke certificates anymore. On top of that, administrators will not be able to log in and access the certificate authority data.
+\textbf{Demilitarized Zone (DMZ)}: This internal network is the one where exposed servers will be located. We say exposed servers when those servers are directly facing the internet, that means the web server. A firewall between the internet and the DMZ has the role of filtering data coming from the network to the DMZ. This DMZ is essential for the company's productivity. If it goes down, end-users will not be able to request or revoke certificates anymore. On top of that, administrators will not be able to log in and access the certificate authority data.
 
-\textbf{Internal network} : this network is the Intranet of the company. It hosts the other servers such as the MySQL database, certificate authority and backup servers. This network is also essential for the company's productivity. If it goes down, the end-users will not be able to access the data it stores. This network also contains a L2 switch.
+\textbf{Internal network}: This network is the Intranet of the company. It hosts the other servers such as the MySQL database, certificate authority and backup servers. This network is also essential for the company's productivity. If it goes down, the end-users will not be able to access the data it stores. This network also contains a L2 switch.
 
-\textbf{Edge Router} : this router is the first element of the system facing the internet. It is locatd on the internet-facing side of the firewall and routes the traffic from the internet to the webserver. 
+\textbf{Edge Router} : this router is the first element of the system facing the Internet. It is located on the internet-facing side of the firewall and routes the traffic from the internet to the web server. 
 
 \textbf{Firewall}: This server hosts our firewall and serves as the entry point to our network. It connects to the router which is the gateway to the Internet.
 
@@ -160,80 +193,101 @@ TODO: Think more carefully about how to do backups (see slack)
 
 \subsubsection{Logical Assets}
 
-All logical assets mentioned here are software systems running on the various machines of iMovies.
+The following is a list of logical assets, which are software systems running on the various machines of iMovies (as opposed to the machines they are running on, whose are listed as physical assets):
 
 \textbf{Firewall} A software firewall is used to control and restrict the flow of communication across the various systems of iMovies.
 
-\textbf{Certificate Authority} This software is responsible for the issuance and revocation of certificates as requested by the employees of iMovies.
+\textbf{Web server}: The web server runs the website which is used by Internet clients and the CA admin.
 
-\textbf{Webserver} 
+\textbf{CA Core} This software is responsible for the issuance and revocation of certificates for clients as well as offering an interface to the CA admin.
 
+\textbf{MySQL DB} This software is a MySQL database, which stores client information.
 
-
-
+\textbf{Backup} A backup software solution to store log and configuration data from the various systems of iMovies.
 
 \subsubsection{Persons}
-\subsubsection{Intangible Goods}
 
+The following list concerns all people who are directly or indirectly involved in the company and might affect the system stability.
+
+\textbf{System administrators}: Personnel from the IT department that have full control over the systems.
+
+\textbf{Developers / IT engineers}: The developers are the ones responsible for producing code or setting up and configuring the servers. Their actions might alter system stability and impact security.
+
+\textbf{Vendors}: iMovies relies on a lot of open source software (firewall, frameworks etc.), which is maintained by the open-source community.
+
+\subsubsection{Intangible Goods}
+The following is a list of intangible goods which are of qualitative nature.
+
+\textbf{Employee Confidence} The certificates (issued and revoked) are used in communicating sensitive information. The employee perception of the system is crucial for its intended usage.
+
+\textbf{Timeliness} 
+Certificate requests are to be done in a timely manner to guarantee the system's intdended usage.
 
 \subsection{Threat Sources}
 
-\textit{Name and describe potential threat sources (\emph{not} threats!) including their motivation.}
+The following is a list of potential threat sources with their corresponding motivation that might affect the system.
 
-\textbf{Nature}: the building is located in the city center. The exterior risks are natural disaster such as earthquakes, lightning and meteors but also include fires.
+\textbf{Nature}: The building is located in the city center. The risks are natural disaster such as earthquakes, lightning and meteors but also include fires.
 
-\textbf{Employees}: we consider here different categories of people that could interact voluntarily in a malicious way with the system in itself. First there is the people allowed to deploy the code and make modifications in the architecture, the engineers. The system administrator, as well as the CA administrator have a direct access to the machines or to the data and should be taken into account. Finally, non-technical employees such as the ones from the cleaning company or the concierge should also be taken into account as they may access rooms where the production servers or the backup servers are located, therefore enabling them to have a physical access on the data.
+\textbf{Employees}: Different categories of people could interact voluntarily in a malicious way with the system in itself. Software Developers: They have the necessary rights to deploy code and make modifications to architecture. System administrators: They have full access and appropriate rights to machines and its data. Non-technical employees: Cleaning personnel, concierge and construction workers have physical access to the company.
+Motivations for malicious activity among all employees include dissatisfaction with the company, spying on other employees and negligence.
 
-\textbf{Script kiddies}: as the website is connected to the internet, script kiddies may find it and infer with it using automated tools for a low-complexity attack.
+\textbf{Script kiddies}: Since the website is connected to the internet, script kiddies have to be taken into account. Motivations might include fame among other script kiddies.
 
-\textbf{Skilled hackers}: as critical data is stored on the server (private keys, certificates), the system is definitely an interesting target for skilled hackers. The data stolen could then be sold for large amount on the deep web or could be used in a malicious way to, for example, steal someone's identity or deliver malicious certificates from the ones stolen.
+\textbf{Skilled hackers}: As critical data is stored on the server (private keys, certificates), the system is definitely an interesting target for skilled hackers. The data stolen could then be sold for large amount on the deep web or could be used in a malicious way to, for example, steal someone's identity or deliver malicious certificates from the ones stolen.
 
 \textbf{Competitors}: 
 
-\textbf{Governmental agencies}: here is the same reasoning as for skilled hackers. Governmental companies might be interested in stealing private keys or certificates in order to decrypt messages or to forge malicious certificates, starting from a legitimate one. They might be interested because the cost of stealing private keys is potentially lower than brute-forcing or finding the private key from the public one.
+\textbf{Governmental agencies}: Governmental agencies might be interested in stealing private keys or certificates in order to decrypt messages or to forge malicious certificates, starting from a legitimate one. 
 
-\textbf{Malware}: the system is directly exposed to the internet, therefore undirected malware such as worms might attack the system. 
+\textbf{Malware}: The system is directly exposed to the internet and, therefore, exposed to malware, whether explicitly targeted or not.
 
+\newpage
 \subsection{Risks Definitions}
 
-Define likelihood, impact and risk level using the following three
-  tables.
-
-%\subsubsection{Tools}
+The following tables define likelihood and impact for event occurrences based on qualitative labels, such as high, medium, low.
 
 \begin{center}
-\begin{tabular}{|l|l|}
-\hline
-\multicolumn{2}{|c|}{\bf Likelihood} \\
+\caption{Likelihood of event occurrence \footnote{\label{note1}adopted from Applied Information Security, Springer, 2011}}
+\begin{prettytablex}{p{2.5cm}p{9cm}}
 \hline
 Likelihood & Description \\
 \hline
+High   & \hspace*{10pt} The threat source is highly motivated and sufficiently capable of exploiting a given vulnerability order to change the asset’s state. The controls to prevent the vulnerability from being exploited are ineffective. \\
 \hline
-High   & \hspace*{20pt}\ldots \\
+Medium & \hspace*{10pt} The threat source is motivated and capable of exploiting a given vulnerability in order to change the asset’s state, but controls are in place
+that may impede a successful exploit of the vulnerability. \\
 \hline
-Medium & \hspace*{20pt}\ldots \\
+Low   & \hspace*{10pt} The threat source lacks motivation or capabilities to exploit a given vulnerability in order to change the asset’s state. Another possibility
+that results in a low likelihood is the case where controls are in place
+that prevent (or at least significantly impede) the vulnerability from
+being exercised. \\
 \hline
-Low   & \hspace*{20pt}\ldots \\
-\hline
-\end{tabular}
-\hspace{3em}
-\begin{tabular}{|l|l|}
-\hline
-\multicolumn{2}{|c|}{\bf Impact} \\
+\label{table:likelihood}
+\end{prettytablex}
+\end{center}
+
+\newcommand{\footnoteref}[1]{\textsuperscript{\ref{#1}}}
+\begin{center}
+\caption{Impact of event occurrence \footnoteref{note1}}
+\begin{prettytablex}{p{2.5cm}p{9cm}}
 \hline
 Impact & Description \\
 \hline
+High   & \hspace*{10pt} The event (1) may result in a highly costly loss of major tangible assets or resources; (2) may significantly violate, harm, or impede an organization’s mission, reputation, or interest; or (3) may result in human death or
+serious injury. \\
 \hline
-High   & \hspace*{20pt}\ldots \\
+Medium & \hspace*{10pt} The event (1) may result in a costly loss of tangible assets or resources; (2) may violate, harm, or impede an organization’s mission, reputation,
+or interest, or (3) may result in human injury. \\
 \hline
-Medium & \hspace*{20pt}\ldots \\
+Low   & \hspace*{10pt} The event (1) may result in a loss of some tangible assets or resources or (2) may noticeably affect an organization’s mission, reputation, or interest. \\
 \hline
-Low   & \hspace*{20pt}\ldots \\
-\hline
-\end{tabular}
+\label{table:likelihood}
+\end{prettytablex}
 \end{center}
 
-\vspace{5mm}
+\newpage
+The following risk-level matrix infers the risk level for an event, based on its likelihood and its impact.
 
 \begin{center}
 \begin{tabular}{|l|c|c|c|}
@@ -241,10 +295,11 @@ Low   & \hspace*{20pt}\ldots \\
 \multicolumn{4}{|c|}{{\bf Risk Level}} \\
 \hline
 {{\bf Likelihood}} & \multicolumn{3}{c|}{{\bf Impact}} \\ %\cline{2-4}
+\hline
      & Low & Medium & High \\  \hline
  High & Low & Medium & High  \\
 \hline
- Medium & Low & Medium & Medium \\
+ Medium & Low & Medium & High \\
 \hline
  Low & Low & Low & Low \\
 \hline
@@ -254,57 +309,114 @@ Low   & \hspace*{20pt}\ldots \\
 
 \subsection{Risk Evaluation}
 
-List all potential threats and the corresponding countermeasures. Estimate the risk based on the information about the threat, the threat sources and the corresponding countermeasure. Adhere to the risk definitions you have given above. As a sanity check, there should be at least one high-risk entry.
+The following evaluation lists threats and their corresponding countermeasures as well as an estimate on the likelihood and impact (after the implemented countermeasures) for assets defined in Section \ref{assets}.
 
+\subsubsection{Evaluation on physical assets}
 
-\subsubsection{{\it Evaluation Asset X}}
-
-Evaluate the likelihood, impact and the resulting risk,  \emph{after implementation of the corresponding countermeasures}. Formulate the threats in active, not passive, 
-voice: who (threat source) does what (threat action)? 
+The risk analysis for the physical assets is as follows:
 
 \begin{footnotesize}
-\begin{prettytablex}{llp{5.5cm}lll}
+\begin{prettytablex}{lp{2.5cm}p{5cm}lll}
 No. & Threat &  Countermeasure(s) & L & I & Risk \\
 \hline
-1 & ... & ... & {\it Low} & {\it Low} & {\it Low} \\
+1 & Natural disaster & The web server is located in the server room, upper floor. Lightning protection is insured by the building. 24/7 monitoring for fire and gas leaks. A guard will call the appropriate services if a natural threat is detected  & {\it Low} & {\it Low} & {\it Low} \\
 \hline
-2 & ... & ...& {\it Medium} & {\it High} & {\it Medium} \\
+2 & Accidental break down of a component & The server is regularly backed up on on- and off-site buildings. Regular maintenance and inspection of the components is ensured. & {\it Low} & {\it Low} & {\it Low} \\
+\hline
+3 & Employees: accidental or malicious demolition & Access control on the server room. Monitoring with video surveillance the access to the server room. Racks are closed and bolted to the floor, making them impossible to move. & {\it Low} & {\it Low} & {\it Low} \\
 \hline
 \end{prettytablex}
 \end{footnotesize}
 
+\subsubsection{Evaluation on logical assets}
 
-
-\subsubsection{{\it Evaluation Asset y}}
+The following list is a risk analysis on logical assets. Because the risk analysis is comparable for all assets, they are not further distinguished.
 
 \begin{footnotesize}
-\begin{prettytablex}{llp{5.5cm}lll}
+\begin{prettytablex}{lp{2.5cm}p{4cm}lll}
 No. & Threat & Countermeasure(s) & L & I & Risk \\
 \hline
-1 & ... & ... & {\it Low} & {\it Low} & {\it Low} \\
+1 & Malicious data theft or misconfiguration from an employee & Same as in the physical part. The drives are disabled making a physical data extraction impossible. & {\it Low} & {\it Low} & {\it Low} \\
 \hline
-2 & ... & ...& {\it Medium} & {\it High} & {\it Medium} \\
+2 & Application layer level attacks such as SQL injections, CSRF, XSS injection etc. & Use of web application firewall (WAF), proper filtering and sensitization, authentication, hardening. & {\it Low} & {\it High} & {\it Low} \\
+\hline
+3 & Skilled hackers gain control over the server because of a software vulnerability, either from the legacy code or from a vendor's security issue & Server is hardened, regularly updated and patches are applied as soon as they are available. Access control according to "least privilege principle" are in place. The network is monitored and protected behind a firewall and an IDS detects irregularities. & {\it Low} & {\it High} & {\it Low} \\
+\hline
+4 & Government agencies gain control over the server using O-day exploits, social engineering practices or other means & Employees are trained to detect social engineering attacks. As in 3., the network is monitored to detect irregularities and malicious activity. & {\it Low} & {\it High} & {\it Low} \\
+\hline
+5 & The backdoor is discovered by an external entity leading to full system access & The backdoor is well hidden and requires a good knowledge in computer science, forensics and cryptography. & {\it Medium} & {\it High} & {\it High} \\
+\hline
+6 & An Internet user gains access to the iMovies' intranet which hosts critical software such as the the MySQL database, the CA software as well as backups & The firewall is configured to only allow connections from the DMZ (originating from the web server) to reach the intranet. Furthermore, access control is in place as an additional countermeasure. & {\it Low} & {\it Medium} & {\it Low} \\
 \hline
 \end{prettytablex}
 \end{footnotesize}
 
-\subsubsection{Detailed Description of Selected Countermeasures}
+\subsubsection{Evaluation on persons}
+\textbf{{\it Evaluation on system administrators, developers and engineers}}
 
-Optionally explain the details of the countermeasures mentioned above.
+\textit{TODO : how many administrators is there in the company ? This might change the point n°1}
 
+There is w system administrators, x CA administrators in the company, y developers and z engineers. They are all certified professionals and are part of the company (i.e. they are not externs.
+
+\begin{footnotesize}
+\begin{prettytablex}{lp{2.5cm}p{4cm}lll}
+No. & Threat & Countermeasure(s) & L & I & Risk \\
+\hline
+1 & Serious illness, accident, or death of a system administrator. Interrupts/terminates employment unexpectedly and influences the working of the system negatively & Hiring of a new administrator fulfilling the necessary requirements. Documentation of administrator tasks & {\it Low} & {\it Medium} & {\it Low} \\
+\hline
+2 & Bribery, corruption, giving confidential data to competitors & Contractual commitment by signing a NDA. Logging of their actions. & {\it Low} & {\it High} & {\it Low} \\
+\hline
+3 & Intimidation, targeted hacking from a government agency to force them to disclose sensitive data (e.g., private keys) & Clear protocol on how to handle these situations. & {\it Low} & {\it High} & {\it Low} \\
+\hline
+4 & Unintended misconfigurations leading to service outage & Experienced and certified administrators. Backup regularly. Disaster scenarios. & {\it Low} & {\it High} & {\it Low} \\
+\hline
+\end{prettytablex}
+\end{footnotesize}
+ 
+%Livio: I changed vendor to open-source community. They don't sell anything :)
+ 
+The system also relies on different open-source products, maintained by the open-source community.
+
+\begin{footnotesize}
+\begin{prettytablex}{lp{2.5cm}p{5cm}lll}
+No. & Threat & Countermeasure(s) & L & I & Risk \\
+\hline
+1 & Open-source community stops updating and releasing new patches & New solutions will be found by engineers. Those terminations take time to be effective, leaving time for engineers to find a replacing product & {\it Low} & {\it High} & {\it Low} \\
+\hline
+2 & Maintainers get hacked and malicious code is injected into their software & Stay up-to-date with news on cyber security and the open-source community in order to check if someone detected something & {\it Low} & {\it High} & {\it Low} \\
+\hline
+3 & Vulnerabilities discovery in software product leading to vulnerabilities in iMovie’s system & Apply patches regularly. Keep the system protected by hardening, firewalls, access control etc. & {\it Low} & {\it High} & {\it Low} \\
+\hline
+\end{prettytablex}
+\end{footnotesize}
+
+\subsubsection{Evaluation on intangible goods}
+
+The following is a list of risks related to intangible goods such as employee confidence.
+
+\begin{footnotesize}
+\begin{prettytablex}{lp{2.5cm}p{3.5cm}lll}
+No. & Threat & Countermeasure(s) & L & I & Risk \\
+\hline
+1 & Data theft or system breakdown impacts the employees negatively & Apply all necessary security measures to decrease the likelihood, such as system hardening, firewalls, access control and general state-of-the-art security practices & {\it Low} & {\it Medium} & {\it Low} \\
+\hline
+2 & Employees get impatient and lose trust in the system if operations cannot be performed in real-time & Clearly defined process as well as testing of all client interaction scenarios & {\it Medium} & {\it Medium} & {\it Medium} \\
+\hline
+\end{prettytablex}
+\end{footnotesize}
 
 
 \subsubsection{Risk Acceptance}
 
-List all medium and high risks, according to the evaluation above. For each risk, propose additional countermeasures that could be implemented to further reduce the risks.
+The following threats warrant closer inspection due to the severity of the corresponding risk:
 
 \begin{footnotesize}
 \begin{prettytablex}{p{2cm}X}
 No. of threat & Proposed additional countermeasure including expected impact  \\
 \hline
-... & ... \\
+Section 2.4.2, Thread No. 5 & Hide the backdoor better or remove it completely to decrease the likelihood of this event happening. \\
 \hline
-... & ... \\
+Section 2.4.4, Thread No. 2 & Additional performance guarantees and more sophisticated integration tests to decrease the likelihood of employee perception. \\
 \hline
 \end{prettytablex}
 \end{footnotesize}
