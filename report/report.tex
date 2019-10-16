@@ -22,7 +22,7 @@
 
 
 \title{\huge\sffamily\bfseries System Description and Risk Analysis}
-\author{Alexandre Chamber \and Tiago Kieliger \and Dorian Laforest \and Livio Sgier}
+\author{Alexandre Chambet \and Tiago Kieliger \and Dorian Laforest \and Livio Sgier}
 \date{\dots}
 
 
@@ -32,40 +32,40 @@
 %% **** please observe the page limit **** 
 %% (it is not allowed to change the font size or page geometry to gain more space)
 %% comment or remove lines below before hand-in
-\begin{center}
-{\large\textcolor{red}{Page limit: 30 pages.}}
-\end{center}
+%\begin{center}
+%{\large\textcolor{red}{Page limit: 30 pages.}}
+%\end{center}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \tableofcontents
 \pagebreak
 
-\begin{framed}
-\noindent
-{\it
-Recall the following guidelines when writing your reports:
-\begin{itemize}
-\item Adhere to the given templates.
+%\begin{framed}
+%\noindent
+%{\it
+%Recall the following guidelines when writing your reports:
+%\begin{itemize}
+%\item Adhere to the given templates.
 
-\item Refer to the security principles in the book for justification.
+%\item Refer to the security principles in the book for justification.
 
-\item Use clear terminology: 
-\begin{itemize}
-\item secure = confidential + authentic. Be clear about
-which properties you are writing.
-\item Are pairwise distinct: certificate, private key, public key, archive to of certificate with private key. Please avoid mixing these up.
-\end{itemize}
+%\item Use clear terminology: 
+%\begin{itemize}
+%\item secure = confidential + authentic. Be clear about
+%which properties you are writing.
+%\item Are pairwise distinct: certificate, private key, public key, archive to of %certificate with private key. Please avoid mixing these up.
+%\end{itemize}
 
-\item Refer to the source document of your risk definitions if appropriate.
+%\item Refer to the source document of your risk definitions if appropriate.
 
-\item For the risk evaluation, formulate the threats in active, not passive, 
-voice: who (threat source) does what (threat action)? 
+%\item For the risk evaluation, formulate the threats in active, not passive, 
+%voice: who (threat source) does what (threat action)? 
 
-\item Use a spell checker before hand-in!
+%\item Use a spell checker before hand-in!
 
-\end{itemize}
-}
-\end{framed}
+%\end{itemize}
+%}
+%\end{framed}
 
 
 \section{System Characterization}
@@ -77,10 +77,7 @@ voice: who (threat source) does what (threat action)?
 %their relationships.   This description should provide a high-level
 %overview of the system, e.g., suitable for managers, that complements
 %the more technical description that follows.
-
-The main mission of our system is to provide secure e-mail communication to the iMovies company. To do so we use a certificate authority (CA) to provide digital certificates to employees. Those certificates will be used to authenticate the users and to allow email encryption.
-
-The systems boundaries are \dots
+The main mission of our system is to deploy a certificate authority (CA) to issue digital certificates for the employees (users) of the iMovies company. Because of the sensitive nature of the investigative reporting that iMovies does, it is important for email communications between users to be secured. Digital certificates, when used correctly, provide security through secrecy, authentication, integrity as well as non-repudiation of the communications. However, our system does not describe how to use these certificates. Instead, it focuses on the deployment of a secure and reliable PKI infrastructure to generate, distribute and manage theses certificates.
 
 \begin{figure}
   \includegraphics[width=\linewidth]{report/system_architecture.jpg}
@@ -88,64 +85,86 @@ The systems boundaries are \dots
   \label{fig:system_architecture}
 \end{figure}
 
-\FloatBarrier
-
-As seen in Figure \ref{fig:system_architecture}, the system is composed of 4 major components which will be explained in more details in part \ref{ssec:components}:
+An overview of the system architecture is depicted in Figure \ref{fig:system_architecture}. The system is composed of 7 major components (more technical details are given in section \ref{ssec:components}):
 \begin{itemize}
-    \item A DMZ containing the web server.
-    \item The intranet, containing the CA Core server, the MySQL database and the backup server.
-    \item A Firewall separating the DMZ and the Intranet from the Internet.
-    \item The internet, not specifically a part of the system but users should be able to connect to the system from outside the internal company's network.
+    \item The \textbf{Client}, a piece of software that demonstrates the functionalities of the system. In practice, the client is either a user or an administrator that connects to the system from the Internet. It can connects either via a web browser (user) or via ssh for administrators.
+    \item The \textbf{Web Server}, which provides users and administrators dedicated visual interfaces to interact with the system. For example, users can connect to the web server to request or revoke certificates.
+    \item The \textbf{CA Core}, which is the core service for certificate management. For instance, it responds to certificate issuance requests from the web server and keeps the MySQL database containing user information up to date. OpenSSL is used to issue and revoke certificates.
+    \item The \textbf{MySQL Database}, which contains users information and metadata for the CA Core. %(TODO: update when implementation is done)
+    \item The \textbf{Backup Server}, which periodically receives logging and backup information from other machines in the system to safely and durably store relevant data.
+    \item The \textbf{Off-site Backup Copy}, which is an identical copy of the Backup Server but with a different physical location. This off-line backup is updated weekly by physically transferring disks containing a copy of the data.
+    \item The \textbf{Firewall}, which regulates the information traffic going between the internet, the demilitarized zone (DMZ) containing the web server, and the company's internal network (intranet).
 \end{itemize}
 
 \subsection{System Functionality}\label{ssec:system_func}
-
+This section describes the main functionalities offered to users and administrators of the system.
 %Describe the system's functions.
 
 \subsubsection{Website}
-The users can go to the company's website. From there they can log in using either their credentials stored in the legacy MySQL database or with a valid certificate.
-Once logged in, the user can change its information (last name, first name, email and password), see its certificates, revoke an existing certificate and request a new one.
+The users can access the company's website. From there they can log in using either their credentials (username and password) or with a valid certificate previously issued. Once logged in, the user can change its information (last name, first name, email and password), see its certificates, revoke an existing certificate and request a new one.
 
-\subsubsection{Certificate issuing}
-Once a user is connected, the CA can deliver a new certificate to him and offer the possibility to download it in the PKCS\#12 format.
+\subsubsection{Certificate issuance}
+Once a user is connected, the CA can deliver a new certificate to him and offer the possibility to download it in the PKCS\#12 format. The certificate is signed by the CA and links the public key of a user to its real name and email address.
 
 \subsubsection{Certificate revocation}
-A user can revoke a certificate he owns by logging to the website and selecting the certificate he wants to revoke. Once this is done, a new revocation list is published on the website. This list is accessible to all users (logged in or not) on the website.
+A user can revoke a certificate he owns by logging in to the website and selecting the certificate he wants to revoke. Once this is done, a new revocation list is published on the website. This list is accessible to all users (logged in or not) on a dedicated page of the website.
 
 \subsubsection{CA Administrator interface}
-The CA administrators have a dedicated interface to consult the CA's current state. This state include the number of issued certificates, the number of revoked certificates and the current serial number of the CA. The CA administrator must use their digital certificate to authenticate themselves to this interface.
+The CA administrators have a dedicated interface to consult the CA's current state. This state includes the number of issued certificates, the number of revoked certificates and the current serial number of the CA. The CA administrators must use their own digital certificate to authenticate themselves to this interface.
 
 \subsubsection{Backup of the certificates and private keys}
-All keys and certificates issued by the CA are backed up and stored in an archive.
+All keys and certificates issued by the CA are backed up and stored in an archive, in case users lose access to their privates keys or certificates.
 
 \subsubsection{System administration and maintenance interface}
-Secure remote interfaces are provided to the administrators of the system. Those interfaces enable the administration and maintenance of each internal components (webserver, firewall, CA Core server, MySQL database and Backup server).
+Secure remote interfaces using SSH (or SFTP) are provided to the
+%TODO: actual interfaces will depend on the implementation
+administrators of the system. Those interfaces enable the administration and maintenance of each internal components (Web Server, Frewall, CA Core, MySQL Database and Backup Server).
 
 \subsubsection{Other backup and logging}
-A backup of all the different configuration of the systems is done periodically. In addition, logging of all components is done at each components and regrouped on the backup server.
+A backup of all the different configuration of the systems is done periodically. In addition, logging of relevant events is done at each components and centralized in the backup server.
 
 \subsection{Security Design}\label{ssec:security_design}
-
-Describe the system's security design, including access control, key and session management,  and security of data at rest and in transit.
-
+We describe in this section some of most important security designs implemented in the system to address fundamental security principles. 
+\subsubsection{DMZ}
+To minimize the attack surface for an adversary on the Internet, the web server is located in a subnet called DMZ. Connections from the internet to the DMZ are only allowed to the IP and port of the web server, all other connections are rejected by the firewall (whitelist approach). In particular, it is not possible to access the intranet from the internet.
 \subsubsection{Access control}
-\subsubsection{Key and session management}
+Access to the website for clients is strictly controlled. A client can access the website either by presenting valid credentials (with respect to those stored in the MySQL database) or by proving the ownership of a secret key for one of its (non-revoked) certificate. In addition, different users will be created on the MySQL server to either read or write the data. This will reduce the impact of an SQL injection attack.
+\subsubsection{Session management}
+After presenting valid credentials, the client is given unique session token which has a limited lifetime (5 minutes) to authenticate all consecutive request during the same session. Therefore, credentials (which are sensitive durable secrets) need only be transmitted once per session.
 \subsubsection{Security of data at rest}
+All disks are encrypted and authenticated and a tight access control is done so that only authorized users can access data.
 \subsubsection{Security of data in transit}
-
+All communications in the system are encrypted. Mostly through the use of TLS.
+\subsubsection{Logging \& Monitoring}
+On every components, security relevant events are logged and stored. For example, when a user requests a certificate, the details of the request and the events resulting from it are logged. This allows to retrace the flow of events when a security breach or a bug occurs. Furthemore, the logs are easily accessible for the system administrator to monitor any suspicious events.
+\subsubsection{Well-defined APIs}
+The different components of our system (Client, Web server, CA Core, etc.) can only interact with each other through a well-defined API which is limited to the minimum set of functions needed to work. This provides isolation between different logical parts of the system.
+\subsubsection{Web application security}
+The web application uses an up-to-date and well known framework, which gives a first basic layer of protection. In addition to that, a web application firewall is in place to actively protect against SQL injections, cross-site scripting, CSRF, remote code injections and other basic attacks.
 \subsection{Components}\label{ssec:components}
-
-List all system components and their interfaces, subdivided, for example, into
-  categories such as platforms, applications, data records, etc. For
-  each component, state its relevant properties.
-
-
+%List all system components and their interfaces, subdivided, for example, into
+%  categories such as platforms, applications, data records, etc. For
+%  each component, state its relevant properties.
+We describe here the planned technical specification of our system. Because the system has not been implemented yet, this is subject to change.
+\subsubsection{Client}
+The client is a python3 script which can be run on any supporting OS with an internet connection.
+\subsubsection{Firewall}
+The firewall is Iptables and we will use Snort as an IDS. Those programs will be running on Ubuntu 18.04 LTS
+\subsubsection{Web Server}
+The web server is an Apache HTTP Server with ModSecurity as a Web Application Firewall. The PHP framework is Symfony. This runs on Ubuntu 18.04 LTS.
+\subsubsection{CA Core}
+The core of the CA is implemented as a java application and runs on Ubuntu 18.04 LTS.
+\subsubsection{MySQL Database}
+As its name indicates, the database is a MySQL database running on Ubuntu 18.04 LTS.
+\subsubsection{Backup}
+The Backup component is a python3 script which is running on Ubuntu 18.04 LTS.
+\subsubsection{Monitoring}
 \ifthenelse{\boolean{showbackdoors}}{
 % show for handed-in version
 
 \subsection{Backdoors}
+Backdoors have not yet been implemented.
 
-Describe the implemented backdoors. 
 
 \bigskip\noindent
 \textbf{Hide this subsection in the version handed over to the reviewing team by setting the flag \texttt{showbackdoors} at the top of this document to \texttt{false}.}
@@ -166,24 +185,22 @@ You may have additional sections according to your needs.
 \subsection{Assets}
 \label{assets}
 
-The following sections define different assets categorized in physical assets, logical assets and persons.
+The following sections define different assets categorized in physical assets, logical assets and persons. We aim to define what needs to be secured as well as how to secure them.
 
 \subsubsection{Physical Assets}
-As seen before, the system is divided into multiple components in order to simplify the development and maintenance and to increase security. The following list capture the physical assets:
+As seen before, the system is divided into multiple components in order to simplify the development and maintenance and to increase security. The following list captures the physical assets:
 
-\textbf{Web Server}: This server runs the web server. It serves as the entry point for Internet clients and offers an interface to change account data, making issuance as well as revocation requests. Additionally, the CA administrator can query the state of the Certification Authority via the web server. It is located in the Demilitarized Zone (DMZ) of iMovies' corporate network.
+\textbf{Web Server}: This server runs the web server. It serves as the entry point for Internet clients and offers an interface to change account data, making certificate issuance and revocation requests. Additionally, the CA administrator can query the state of the Certification Authority via the web server. It is located in the Demilitarized Zone (DMZ) of iMovies' corporate network.
 
-\textbf{Certificate Authority Server}: This server runs the CA Core application, which is responsible for issuing and revoking certificates. It is located in the Intranet of iMovies.
+\textbf{Certificate Authority Server \& MySQL server}: Those servers run the CA Core application and the MySQL database. They are responsible for issuing and revoking certificates and storing employees data such as names, email addresses and hashed passwords. They are located in the Intranet of iMovies.
 
-\textbf{MySQL server}: This server hosts the MySQL database. It contains employee data, such as names, email addresses and hashed passwords. However, no certificates are stored in the database. This server is located in the Intranet of iMovies.
-
-\textbf{Backup Server}: This server hosts the backup system. It stores log and configuration information from the different systems. It is also part of the Intranet of iMovies.
+\textbf{Backup Server}: The backup process follows the 3-2-1 rule. There are 3 copies of the data with 2 being on disk and the other on tape. The 2 digital backups are stored on-site with one on the machine it backs up (for instance a protected directory in the web server holds a backup of the web server) and the other one is in the backup server. The tape backups are stored off-site in another site, in case of the destruction of the company's building. This tape backup transportation is taken care by a special team of iMovie.
 
 TODO: Think more carefully about how to do backups (see slack)
 
 \textbf{Demilitarized Zone (DMZ)}: This internal network is the one where exposed servers will be located. We say exposed servers when those servers are directly facing the internet, that means the web server. A firewall between the internet and the DMZ has the role of filtering data coming from the network to the DMZ. This DMZ is essential for the company's productivity. If it goes down, end-users will not be able to request or revoke certificates anymore. On top of that, administrators will not be able to log in and access the certificate authority data.
 
-\textbf{Internal network}: This network is the Intranet of the company. It hosts the other servers such as the MySQL database, certificate authority and backup servers. This network is also essential for the company's productivity. If it goes down, the end-users will not be able to access the data it stores. This network also contains a L2 switch.
+\textbf{Internal network}: This network is the Intranet of the company. It hosts the other servers such as the MySQL database, certificate authority and backup servers. This network is also essential for the company's productivity. If it goes down, the end-users will not be able to access the data it stores. This network also contains a L2 switch. This switch is a network switch connecting the different servers together and forwarding the packets to the desired machine.
 
 \textbf{Edge Router} : this router is the first element of the system facing the Internet. It is located on the internet-facing side of the firewall and routes the traffic from the internet to the web server. 
 
@@ -193,8 +210,10 @@ TODO: Think more carefully about how to do backups (see slack)
 
 \subsubsection{Logical Assets}
 
-The following is a list of logical assets, which are software systems running on the various machines of iMovies (as opposed to the machines they are running on, whose are listed as physical assets):
-
+The following is a list of logical assets, which are split into software systems running on the various machines of iMovies (as opposed to the machines they are running on, whose are listed as physical assets), and information assets, such as usernames and passwords of the systems' users.
+\newline
+\textbf{Software:}
+\newline
 \textbf{Firewall} A software firewall is used to control and restrict the flow of communication across the various systems of iMovies.
 
 \textbf{Web server}: The web server runs the website which is used by Internet clients and the CA admin.
@@ -204,6 +223,20 @@ The following is a list of logical assets, which are software systems running on
 \textbf{MySQL DB} This software is a MySQL database, which stores client information.
 
 \textbf{Backup} A backup software solution to store log and configuration data from the various systems of iMovies.
+
+\textbf{Internet connectivity} \textit{TODO : what are the assumptions on the connection?}
+\newline
+
+After describing the logical assets on a software point of view, we now describe the logical assets with the information related to it.
+\newline
+
+\textbf{Information:}
+\newline
+\textbf{MySQL data} The data stored in the MySQL database is extremely sensitive. It contains the first name, last name, email address and passwords of the users. The state space of this asset is the set of people who have access to a valid email/password combination. The value associated with the state of a given email/password is the same for all users, as logging via email/password input is only allowed for basic users.
+
+\textbf{Certificates} The certificates are available on the CA's server and are also crucial. They allow the logging of basic users and CA administrator. Therefore the state space of this asset is the set of people who have a valid certificate. The value associated with the state of the certificate depends of the access rights of the corresponding account. \textit{TODO : logging via certificate or private key???}
+
+\textbf{Private keys} The private keys are stored in the backup archive and are encrypted. Nevertheless, the set of private keys is also one of the most critical asset of the company as they would allow anyone to prove ownership of a certificate or to issue / revoke certificates. The state space of this asset is the set of people who are registered in the company's system. The value associated with the state of the private key is hard to define because it can lead to a full account impersonation or worse. The loss would be not only monetary but also intangible such as trustworthiness.
 
 \subsubsection{Persons}
 
@@ -218,16 +251,16 @@ The following list concerns all people who are directly or indirectly involved i
 \subsubsection{Intangible Goods}
 The following is a list of intangible goods which are of qualitative nature.
 
-\textbf{Employee Confidence} The certificates (issued and revoked) are used in communicating sensitive information. The employee perception of the system is crucial for its intended usage.
+\textbf{Employee Confidence} The certificates (issued and revoked) are used in communicating sensitive information. Many reasons might negatively influence the employee confidence in the system, such as not revoking certificates once a revocation request is issued or delayed certificate issuance etc. The employee perception of the system is crucial for its intended usage. 
 
 \textbf{Timeliness} 
-Certificate requests are to be done in a timely manner to guarantee the system's intdended usage.
+Certificate requests are to be done in a timely manner to guarantee the system's intended usage.
 
 \subsection{Threat Sources}
 
 The following is a list of potential threat sources with their corresponding motivation that might affect the system.
 
-\textbf{Nature}: The building is located in the city center. The risks are natural disaster such as earthquakes, lightning and meteors but also include fires.
+\textbf{Nature}: The building is located in the city center. The risks are natural disaster such as earthquakes, flooding, lightning and meteors but also include fires.
 
 \textbf{Employees}: Different categories of people could interact voluntarily in a malicious way with the system in itself. Software Developers: They have the necessary rights to deploy code and make modifications to architecture. System administrators: They have full access and appropriate rights to machines and its data. Non-technical employees: Cleaning personnel, concierge and construction workers have physical access to the company.
 Motivations for malicious activity among all employees include dissatisfaction with the company, spying on other employees and negligence.
@@ -238,17 +271,16 @@ Motivations for malicious activity among all employees include dissatisfaction w
 
 \textbf{Competitors}: 
 
-\textbf{Governmental agencies}: Governmental agencies might be interested in stealing private keys or certificates in order to decrypt messages or to forge malicious certificates, starting from a legitimate one. 
+\textbf{Governmental agencies}: Governmental agencies might be interested in stealing private keys or certificates in order to decrypt messages or to forge malicious certificates. Some governments have been openly criticised by iMovies in the past, therefore they have an incentives to disrupts the company's operations.
 
 \textbf{Malware}: The system is directly exposed to the internet and, therefore, exposed to malware, whether explicitly targeted or not.
 
 \newpage
 \subsection{Risks Definitions}
 
-The following tables define likelihood and impact for event occurrences based on qualitative labels, such as high, medium, low.
+The following tables define likelihood and impact for event occurrences based on qualitative labels, such as high, medium, low. \cite{basin}
 
 \begin{center}
-\caption{Likelihood of event occurrence \footnote{\label{note1}adopted from Applied Information Security, Springer, 2011}}
 \begin{prettytablex}{p{2.5cm}p{9cm}}
 \hline
 Likelihood & Description \\
@@ -269,7 +301,7 @@ being exercised. \\
 
 \newcommand{\footnoteref}[1]{\textsuperscript{\ref{#1}}}
 \begin{center}
-\caption{Impact of event occurrence \footnoteref{note1}}
+%\caption{Impact of event occurrence \footnoteref{note1}}
 \begin{prettytablex}{p{2.5cm}p{9cm}}
 \hline
 Impact & Description \\
@@ -319,7 +351,7 @@ The risk analysis for the physical assets is as follows:
 \begin{prettytablex}{lp{2.5cm}p{5cm}lll}
 No. & Threat &  Countermeasure(s) & L & I & Risk \\
 \hline
-1 & Natural disaster & The web server is located in the server room, upper floor. Lightning protection is insured by the building. 24/7 monitoring for fire and gas leaks. A guard will call the appropriate services if a natural threat is detected  & {\it Low} & {\it Low} & {\it Low} \\
+1 & Natural disaster & The web server is located in the server room, upper floor. Lightning protection is insured by the building. 24/7 monitoring for fire and gas leaks. A guard will call the appropriate services if a natural threat is detected  & {\it Low} & {\it High} & {\it Low} \\
 \hline
 2 & Accidental break down of a component & The server is regularly backed up on on- and off-site buildings. Regular maintenance and inspection of the components is ensured. & {\it Low} & {\it Low} & {\it Low} \\
 \hline
@@ -336,9 +368,9 @@ The following list is a risk analysis on logical assets. Because the risk analys
 \begin{prettytablex}{lp{2.5cm}p{4cm}lll}
 No. & Threat & Countermeasure(s) & L & I & Risk \\
 \hline
-1 & Malicious data theft or misconfiguration from an employee & Same as in the physical part. The drives are disabled making a physical data extraction impossible. & {\it Low} & {\it Low} & {\it Low} \\
+1 & Malicious data theft or misconfiguration from an employee & Same as in the physical part. The USB drives are disabled making a physical data extraction impossible. & {\it Low} & {\it Low} & {\it Low} \\
 \hline
-2 & Application layer level attacks such as SQL injections, CSRF, XSS injection etc. & Use of web application firewall (WAF), proper filtering and sensitization, authentication, hardening. & {\it Low} & {\it High} & {\it Low} \\
+2 & Application layer level attacks such as SQL injections, CSRF, XSS injection etc. & Use of web application firewall (WAF), proper filtering and sanitizing, authentication, hardening. & {\it Low} & {\it High} & {\it Low} \\
 \hline
 3 & Skilled hackers gain control over the server because of a software vulnerability, either from the legacy code or from a vendor's security issue & Server is hardened, regularly updated and patches are applied as soon as they are available. Access control according to "least privilege principle" are in place. The network is monitored and protected behind a firewall and an IDS detects irregularities. & {\it Low} & {\it High} & {\it Low} \\
 \hline
@@ -346,7 +378,7 @@ No. & Threat & Countermeasure(s) & L & I & Risk \\
 \hline
 5 & The backdoor is discovered by an external entity leading to full system access & The backdoor is well hidden and requires a good knowledge in computer science, forensics and cryptography. & {\it Medium} & {\it High} & {\it High} \\
 \hline
-6 & An Internet user gains access to the iMovies' intranet which hosts critical software such as the the MySQL database, the CA software as well as backups & The firewall is configured to only allow connections from the DMZ (originating from the web server) to reach the intranet. Furthermore, access control is in place as an additional countermeasure. & {\it Low} & {\it Medium} & {\it Low} \\
+6 & An Internet user gains access to the iMovies' intranet which hosts critical software such as the MySQL database, the CA software as well as backups & The firewall is configured to only allow connections from the DMZ (originating from the web server) to reach the intranet. Furthermore, access control is in place as an additional countermeasure. & {\it Low} & {\it Medium} & {\it Low} \\
 \hline
 \end{prettytablex}
 \end{footnotesize}
@@ -354,9 +386,9 @@ No. & Threat & Countermeasure(s) & L & I & Risk \\
 \subsubsection{Evaluation on persons}
 \textbf{{\it Evaluation on system administrators, developers and engineers}}
 
-\textit{TODO : how many administrators is there in the company ? This might change the point n°1}
+%\textit{TODO : how many administrators is there in the company ? This might change the point n°1}
 
-There is w system administrators, x CA administrators in the company, y developers and z engineers. They are all certified professionals and are part of the company (i.e. they are not externs.
+There is w system administrators, x CA administrators in the company, y developers and z engineers. They are all certified professionals and are part of the company (i.e. they are not externs).
 
 \begin{footnotesize}
 \begin{prettytablex}{lp{2.5cm}p{4cm}lll}
@@ -400,7 +432,7 @@ No. & Threat & Countermeasure(s) & L & I & Risk \\
 \hline
 1 & Data theft or system breakdown impacts the employees negatively & Apply all necessary security measures to decrease the likelihood, such as system hardening, firewalls, access control and general state-of-the-art security practices & {\it Low} & {\it Medium} & {\it Low} \\
 \hline
-2 & Employees get impatient and lose trust in the system if operations cannot be performed in real-time & Clearly defined process as well as testing of all client interaction scenarios & {\it Medium} & {\it Medium} & {\it Medium} \\
+2 & Employees get impatient and stop using the system if operations cannot be performed in real-time & Clearly defined process as well as testing of all client interaction scenarios & {\it Medium} & {\it Medium} & {\it Medium} \\
 \hline
 \end{prettytablex}
 \end{footnotesize}
@@ -414,13 +446,14 @@ The following threats warrant closer inspection due to the severity of the corre
 \begin{prettytablex}{p{2cm}X}
 No. of threat & Proposed additional countermeasure including expected impact  \\
 \hline
-Section 2.4.2, Thread No. 5 & Hide the backdoor better or remove it completely to decrease the likelihood of this event happening. \\
+Section 2.4.2, Threat No. 5 & Hide the backdoor better or remove it completely to decrease the likelihood of this event happening. \\
 \hline
-Section 2.4.4, Thread No. 2 & Additional performance guarantees and more sophisticated integration tests to decrease the likelihood of employee perception. \\
+Section 2.4.4, Threat No. 2 & Additional performance guarantees and more sophisticated integration tests to decrease the likelihood of employee perception. \\
 \hline
 \end{prettytablex}
 \end{footnotesize}
-
+\bibliographystyle{plain}
+\bibliography{bibliography}
 \end{document}
 
 %%% Local Variables: 
