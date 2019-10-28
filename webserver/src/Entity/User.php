@@ -6,6 +6,7 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\UserInterface;
 
 /**
+ * @ORM\Table(name="users")
  * @ORM\Entity(repositoryClass="App\Repository\UserRepository")
  */
 class User implements UserInterface
@@ -13,14 +14,9 @@ class User implements UserInterface
     /**
      * @ORM\Id()
      * @ORM\GeneratedValue()
-     * @ORM\Column(type="integer")
+     * @ORM\Column(type="string", length=64, unique=true)
      */
-    private $id;
-
-    /**
-     * @ORM\Column(type="string", length=180, unique=true)
-     */
-    private $uuid;
+    private $uid;
 
     /**
      * @ORM\Column(type="json")
@@ -29,29 +25,36 @@ class User implements UserInterface
 
     /**
      * @var string The hashed password
-     * @ORM\Column(type="string")
+     * @ORM\Column(type="string", length=64)
      */
-    private $password;
+    private $pwd;
 
     /**
-     * @var string The username
-     * @ORM\Column(type="string", length=255, unique=true)
+     * @var string The lastname
+     * @ORM\Column(type="string", length=64)
      */
-    private $username;
+    private $lastname;
 
-    public function getId(): ?int
+    /**
+     * @var string the first name
+     * @ORM\Column(type="string", length=64)
+     */
+    private $firstname;
+
+    /**
+     * @var string the email
+     * @ORM\Column(type="string", length=64)
+     */
+    private $email;
+
+    public function getUid(): ?string
     {
-        return $this->id;
+        return $this->uid;
     }
 
-    public function getUuid(): ?string
+    public function setUid(string $uid): self
     {
-        return $this->uuid;
-    }
-
-    public function setUuid(string $uuid): self
-    {
-        $this->uuid = $uuid;
+        $this->uid = $uid;
 
         return $this;
     }
@@ -78,29 +81,18 @@ class User implements UserInterface
     /**
      * @see UserInterface
      */
-    public function getPassword(): string
+    public function getPwd(): string
     {
-        return (string)$this->password;
+        return (string)$this->pwd;
     }
 
-    public function setPassword(string $password): self
+    public function setPwd(string $pwd): self
     {
-        $this->password = $password;
+        $this->pwd = $pwd;
 
         return $this;
     }
 
-    public function getUsername(): string
-    {
-        return (string)$this->username;
-    }
-
-    public function setUsername(string $username): self
-    {
-        $this->username = $username;
-
-        return $this;
-    }
 
     /**
      * @see UserInterface
@@ -118,4 +110,92 @@ class User implements UserInterface
         // If you store any temporary, sensitive data on the user, clear it here
         // $this->plainPassword = null;
     }
+
+    /**
+     * Returns the password used to authenticate the user.
+     *
+     * This should be the encoded password. On authentication, a plain-text
+     * password will be salted, encoded, and then compared to this value.
+     *
+     * @return string|null The encoded password if any
+     */
+    public function getPassword()
+    {
+        return $this->pwd;
+    }
+
+    /**
+     * Returns the username used to authenticate the user.
+     *
+     * @return string The username
+     */
+    public function getUsername()
+    {
+        return $this->uid;
+    }
+
+    public function setUsername(string $username) {
+        return $this->setUid($username);
+    }
+
+    public function setPassword(string $password) {
+        return $this->setPwd($password);
+    }
+
+    /**
+     * @return string
+     */
+    public function getLastname(): string
+    {
+        return $this->lastname;
+    }
+
+    /**
+     * @param string $lastname
+     * @return User
+     */
+    public function setLastname(string $lastname): User
+    {
+        $this->lastname = $lastname;
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getFirstname(): string
+    {
+        return $this->firstname;
+    }
+
+    /**
+     * @param string $firstname
+     * @return User
+     */
+    public function setFirstname(string $firstname): User
+    {
+        $this->firstname = $firstname;
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getEmail(): string
+    {
+        return $this->email;
+    }
+
+    /**
+     * @param string $email
+     * @return User
+     */
+    public function setEmail(string $email): User
+    {
+        $this->email = $email;
+        return $this;
+    }
+
+
 }
+
