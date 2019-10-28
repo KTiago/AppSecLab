@@ -2,7 +2,8 @@
     <a class="navbar-brand" href="#">
         iMovie
     </a>
-    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
@@ -13,9 +14,16 @@
             <li class="nav-item">
                 <a class="nav-link" href="#">Blopblop</a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#">Blopblop</a>
-            </li>
+
+            {% if app.user %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ path('app_logout') }}">Logout</a>
+                </li>
+            {% else %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ path('app_login') }}">Login</a>
+                </li>
+            {% endif %}
         </ul>
     </div>
 

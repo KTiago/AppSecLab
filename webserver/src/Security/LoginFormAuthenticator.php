@@ -67,8 +67,6 @@ class LoginFormAuthenticator extends AbstractFormLoginAuthenticator
         $user = $this->entityManager->getRepository(User::class)->findOneBy(['username' => $credentials['username']]);
 
         if (!$user) {
-            var_dump($credentials);
-            throw new \Error($credentials['username']);
             // fail authentication with a custom error
             throw new CustomUserMessageAuthenticationException('Username could not be found.');
         }
@@ -88,7 +86,7 @@ class LoginFormAuthenticator extends AbstractFormLoginAuthenticator
         }
 
         // Redirecting to secure area
-        return new RedirectResponse($this->urlGenerator->generate('authenticated'));
+        return new RedirectResponse($this->urlGenerator->generate('user_home'));
     }
 
     protected function getLoginUrl()

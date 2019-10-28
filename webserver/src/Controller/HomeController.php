@@ -15,15 +15,4 @@ class HomeController extends AbstractController
     {
         return $this->render('home.html.twig');
     }
-
-    /**
-     * @Route("/authenticated/", name="authenticated")
-     */
-    public function authenticated() {
-        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
-
-        $user = $this->getUser();
-
-        return new Response("Yo " . $user->getUsername());
-    }
 }

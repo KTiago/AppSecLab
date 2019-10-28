@@ -13,8 +13,6 @@ class UserController extends AbstractController
      */
     public function index()
     {
-        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
-
         $user = $this->getUser();
 
         return new Response("Yo " . $user->getUsername());
