@@ -2,7 +2,15 @@
 
 {% block body %}
     <div class="container">
-        Yo
+        <div class="update-info-form">
+            {% for message in app.flashes('success') %}
+                <div class="alert alert-success">
+                    {{ message }}
+                </div>
+            {% endfor %}
+            <h2>Update your personal information</h2>
+            {{ form(form) }}
+        </div>
     </div>
 {% endblock %}
 
