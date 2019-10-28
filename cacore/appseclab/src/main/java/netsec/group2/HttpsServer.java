@@ -2,8 +2,16 @@ package netsec.group2;
 
 import fi.iki.elonen.NanoHTTPD;
 
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLServerSocketFactory;
 import javax.xml.ws.Response;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
 
 
 public class HttpsServer extends NanoHTTPD {
@@ -28,4 +36,13 @@ public class HttpsServer extends NanoHTTPD {
         super.start();
     }
 
+    public void makeHttps() throws KeyStoreException, CertificateException, NoSuchAlgorithmException, IOException, UnrecoverableKeyException {
+
+        KeyStore ks = KeyStore.getInstance("JKS");
+        ks.load( new FileInputStream( "certs/rootcertstore.jks" ),    "wafwaf".toCharArray());
+        KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+        keyManagerFactory.init(ks, "wafwaf".toCharArray());
+
+        this.makeSecure(makeSSLSocketFactory(ks,keyManagerFactory),null);
+    }
 }
