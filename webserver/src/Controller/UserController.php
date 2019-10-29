@@ -15,8 +15,17 @@ class UserController extends AbstractController
     /**
      * @Route("/user/", name="user_home")
      */
-    public function index(Request $request)
+    public function index()
     {
+        return $this->render('user/user_home.html.twig');
+    }
+
+    /**
+     * @param Request $request
+     * @Route("/user/update/", name="update_user_information")
+     * @return Response
+     */
+    public function update(Request $request) {
         $user = $this->getUser();
         $form = $this->createForm(UserType::class, $user);
 
@@ -37,7 +46,7 @@ class UserController extends AbstractController
             $this->addFlash('success', 'Your personal data have been updated.');
         }
 
-        return $this->render('user/user_home.html.twig', [
+        return $this->render('user/update_user_information.html.twig', [
             'form' => $form->createView()
         ]);
     }

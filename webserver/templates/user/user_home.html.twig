@@ -1,15 +1,39 @@
-{% extends "base.html.twig" %}
+{% extends "user/user_base.html.twig" %}
 
-{% block body %}
-    <div class="container">
-        <div class="update-info-form">
-            {% for message in app.flashes('success') %}
-                <div class="alert alert-success">
-                    {{ message }}
-                </div>
-            {% endfor %}
-            <h2>Update your personal information</h2>
-            {{ form(form) }}
+{% block title %}User portal - iMovie{% endblock %}
+
+{% block user_body %}
+    <h1>Welcome back, {{ app.user.firstname }}</h1>
+    <p>You will find below the different actions you can do to manage your account.</p>
+    <br />
+    <div class="card-deck">
+        <div class="card">
+            <div class="card-header">Update my information</div>
+            <div class="card-body">
+                <p class="card-text">Update your personal information via our web-based form.</p>
+                <a href="{{ path('update_user_information') }}" class="btn btn-primary">Go</a>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">Download a certificate</div>
+            <div class="card-body">
+                <p class="card-text">Download the certificate from here. Please note that the private key cannot be
+                    downloaded.</p>
+                <a href="#" class="btn btn-primary">Download</a>
+            </div>
+        </div>
+        <div class="text-white bg-danger card">
+            <div class="card-header">Revoke my certificate</div>
+            <div class="card-body">
+                <p class="card-text">
+                    If you lost your private key or for any other reason, you can click the link below to revoke your
+                    certificate.
+                    <br/>
+                    <br/>
+                    <strong>WARNING! This operation is irreversible.</strong>
+                </p>
+                <a href="#" class="btn btn-light">Revoke</a>
+            </div>
         </div>
     </div>
 {% endblock %}

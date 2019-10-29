@@ -15,7 +15,6 @@ class HomeController extends AbstractController
     public function index()
     {
         $pe = new ShaPasswordEncoder();
-        var_dump($pe->encodePassword("Astrid",  null));
 
         return $this->render('home.html.twig');
     }
