@@ -1,0 +1,15 @@
+{% extends "base.html.twig" %}
+
+{% block body %}
+    <div class="container">
+        <br />
+        {% for message in app.flashes('admin_success') %}
+            <div class="alert alert-success">
+                {{ message }}
+            </div>
+        {% endfor %}
+        <h1>iMovie's administrator interface</h1>
+        <p>Blablalbalbalba</p>
+    </div>
+{% endblock %}
+

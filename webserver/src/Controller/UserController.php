@@ -39,6 +39,7 @@ class UserController extends AbstractController
             $encoded = $encoder->encodePassword($user->getPassword(), null);
             $user->setPwd($encoded);
 
+            // Save the user in the DB
             $entityManager = $this->getDoctrine()->getManager();
             $entityManager->persist($user);
             $entityManager->flush();
