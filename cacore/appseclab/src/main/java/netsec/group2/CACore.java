@@ -15,17 +15,10 @@ public class CACore {
     public static void main( String[] args ) throws IOException, UnrecoverableKeyException, CertificateException, NoSuchAlgorithmException, KeyStoreException, NoSuchProviderException, SignatureException, InvalidKeyException, OperatorCreationException, InvalidKeySpecException {
 
         HttpsServer srvr = new HttpsServer("",PORT_NUMBER);
-        srvr.makeHttps();
         srvr.start();
 
-        Certs cert = new Certs();
-        cert.createCertificate("waf@waf.com", "waffel");
-
-        //Just run for a while
-        try {
-            Thread.sleep(600000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        Runtime.getRuntime().addShutdownHook(new Thread(()->{
+            srvr.stop();
+        }));
     }
 }
