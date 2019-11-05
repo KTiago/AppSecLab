@@ -71,17 +71,6 @@ public class HttpsServer extends NanoHTTPD {
         super.start();
     }
 
-    private JsonObject procReq(InputStream in) throws IOException {
-
-        JsonObject body = null;
-        if (in != null && !(in.available() == 0)) {
-            JsonReader reader = Json.createReader(in);
-            body = reader.readObject();
-        }
-
-        return body;
-    }
-
     public void makeHttps() throws KeyStoreException, CertificateException, NoSuchAlgorithmException, IOException, UnrecoverableKeyException {
 
         KeyStore ks = KeyStore.getInstance("JKS");

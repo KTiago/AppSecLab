@@ -47,17 +47,7 @@ public class Cert {
             rootStore = KeyStore.getInstance("PKCS12");
             rootStore.load(new FileInputStream(ROOT_CA), ROOT_CA_PASSWORD.toCharArray());
 
-            Key key = rootStore.getKey(ROOT_CA_ALIAS, ROOT_CA_PASSWORD.toCharArray());
-
-            //Kind of a weird way to extract the private key but meh
-            RSAPrivateCrtKey privKey = (RSAPrivateCrtKey) key;
-            RSAPrivateCrtKeyParameters caPrivateKey = new RSAPrivateCrtKeyParameters(privKey.getModulus(), privKey.getPublicExponent(), privKey.getPrivateExponent(),
-                    privKey.getPrimeP(), privKey.getPrimeQ(), privKey.getPrimeExponentP(), privKey.getPrimeExponentQ(), privKey.getCrtCoefficient());
-            caPrivKey = KeyFactory.getInstance("RSA").generatePrivate(
-                    new RSAPrivateCrtKeySpec(caPrivateKey.getModulus(), caPrivateKey.getPublicExponent(),
-                            caPrivateKey.getExponent(), caPrivateKey.getP(), caPrivateKey.getQ(),
-                            caPrivateKey.getDP(), caPrivateKey.getDQ(), caPrivateKey.getQInv()));
-
+            caPrivKey = (PrivateKey)rootStore.getKey(ROOT_CA_ALIAS, ROOT_CA_PASSWORD.toCharArray());
             caCert = (X509Certificate) rootStore.getCertificate(ROOT_CA_ALIAS);
         } catch (Exception e) {
             e.printStackTrace();
@@ -103,18 +93,21 @@ public class Cert {
             e.printStackTrace();
         }
 
-                KeyStore keystore = null;
+        KeyStore keystore = null;
         byte[] certBytes = null;
         try {
             keystore = KeyStore.getInstance("PKCS12");
             keystore.load(null, null);
 
-            X509Certificate[] chain = new X509Certificate[2];
+            X509Certificate[] chain = new X509Certificate[1];
             chain[0] = newCert;
-            chain[1] = caCert;
 
             keystore.setKeyEntry(email, keyPair.getPrivate(), "".toCharArray(), chain);
             keystore.store(new FileOutputStream("certs/certGen"), "".toCharArray());
+
+            //Add to local structures as well
+            //CertStructure.getInstance().setActiveCert(chain[0]);
+            //CertStructure.getInstance().setKeyCert(chain[0],keyPair.getPrivate());
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();

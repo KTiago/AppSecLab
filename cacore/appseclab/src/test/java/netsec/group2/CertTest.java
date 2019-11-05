@@ -1,6 +1,11 @@
 package netsec.group2;
 
 
+import org.bouncycastle.asn1.x500.RDN;
+import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x500.style.BCStyle;
+import org.bouncycastle.asn1.x500.style.IETFUtils;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateHolder;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.junit.Before;
 import org.junit.Test;
@@ -73,13 +78,15 @@ public class CertTest {
         Certificate[] chain = keystore.getCertificateChain(testEmail);
 
         X509Certificate leafCert = (X509Certificate)chain[0];
-        String certContent = leafCert.getSubjectX500Principal().toString();
 
-        assertTrue(certContent.contains("OU="+testName));
-        assertTrue(certContent.contains("CN="+testEmail));
+        X500Name x500name = new JcaX509CertificateHolder(leafCert).getSubject();
+        RDN cn = x500name.getRDNs(BCStyle.CN)[0];
+        RDN ou = x500name.getRDNs(BCStyle.OU)[0];
+
+        assertTrue(IETFUtils.valueToString(cn.getFirst().getValue()).equals(testEmail));
+        assertTrue(IETFUtils.valueToString(ou.getFirst().getValue()).equals(testName));
 
         //To verify if the signing was done with the root key, we have to load it
-
         final String ROOT_CA = "certs/root/rootstore.p12";
         final String ROOT_CA_PASSWORD = "wafwaf";
         final String ROOT_CA_ALIAS = "rootcert";
