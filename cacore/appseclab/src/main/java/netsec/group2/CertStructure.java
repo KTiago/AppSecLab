@@ -14,6 +14,7 @@ import java.security.PrivateKey;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
@@ -101,9 +102,18 @@ public class CertStructure {
         try {
             if(!activeCerts.containsAlias(email)) return false;
             revokedCerts.setCertificateEntry(email,activeCerts.getCertificate(email));
+            revokedCerts.store(new FileOutputStream("revokedCerts"),"".toCharArray());
             activeCerts.deleteEntry(email);
             return true;
         } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
             e.printStackTrace();
         }
         return false;
@@ -113,14 +123,23 @@ public class CertStructure {
 
         try {
             certsWithKeys.setKeyEntry(getCnFromCert(chain[0]),key,"".toCharArray(),chain);
+            certsWithKeys.store(new FileOutputStream("certsWithKeys"), "".toCharArray());
         } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     public List<String> getRevokedList() {
 
-        List<String> serials = new LinkedList<>();
+        List<String> serials = new ArrayList<>();
         Enumeration<String> aliases = null;
         try {
             aliases = revokedCerts.aliases();

@@ -45,7 +45,9 @@ public class UtilsForTests {
         conn.setRequestProperty("Content-Type", "application/jose+json");
         conn.setDoOutput(true);
 
-        byte[] payload = req.toString().getBytes("UTF-8");
+        byte[] payload = null;
+        if(!method.equals("GET"))
+            payload = req.toString().getBytes("UTF-8");
 
         if(payload != null)
             conn.setFixedLengthStreamingMode(payload.length);

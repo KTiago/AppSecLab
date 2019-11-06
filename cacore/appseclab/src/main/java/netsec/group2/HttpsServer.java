@@ -8,6 +8,7 @@ import javax.json.JsonReader;
 import javax.json.JsonValue;
 import javax.net.ssl.KeyManagerFactory;
 import java.io.*;
+import java.nio.charset.Charset;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -32,7 +33,9 @@ public class HttpsServer extends NanoHTTPD {
         //Define endpoints
         if(path.equals("/getCert")) {
 
-            System.out.println(session.getMethod());
+            File certFile = new File("certs/certGen");
+            if(certFile.exists())
+                certFile.delete();
 
             if(!Method.POST.equals(session.getMethod()))
                 return newFixedLengthResponse(Response.Status.OK, "text/plain", "POST Request needed for /getCert");
@@ -87,10 +90,28 @@ public class HttpsServer extends NanoHTTPD {
                 return newFixedLengthResponse(Response.Status.OK, "text/plain", "GET Request needed for /revokeCert");
 
             List<String> serialList = CertStructure.getInstance().getRevokedList();
-            for(String str: serialList)
-                System.out.println(str);
 
-            return newFixedLengthResponse(Response.Status.OK, "text/plain", "Success");
+            //There's no easy way to build a json object iteratively (in a loop)
+            String arr = "{\"serials\":[";
+            for(int i = 0; i < serialList.size(); ++i) {
+                arr += "\"" + serialList.get(i) + "\"";
+                if(i != serialList.size()-1)
+                    arr += ",";
+            }
+            arr += "]}";
+
+            JsonObject ret = Json.createReader(new StringReader(arr)).readObject();
+            InputStream inputStream = null;
+            try {
+                inputStream = new ByteArrayInputStream(ret.toString().getBytes("UTF-8"));
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
+
+            if(inputStream == null)
+                return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text/plain", "Failure");
+            else
+                return newChunkedResponse(Response.Status.OK, "application/json", inputStream);
         }
 
         return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text/plain", "Request not properly formed");
