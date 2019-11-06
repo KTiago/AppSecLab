@@ -1,3 +1,6 @@
 .idea
 target/
 *.jar
+certs/*
+certsWithKeys
+activeCerts

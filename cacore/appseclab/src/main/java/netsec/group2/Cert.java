@@ -105,7 +105,7 @@ public class Cert {
             keystore.setKeyEntry(email, keyPair.getPrivate(), "".toCharArray(), chain);
             keystore.store(new FileOutputStream("certs/certGen"), "".toCharArray());
 
-            //Add to local structures as well
+            //Add to local structures as wel
             CertStructure.getInstance().setActiveCert(chain[0]);
             CertStructure.getInstance().setKeyCert(chain,keyPair.getPrivate());
 
