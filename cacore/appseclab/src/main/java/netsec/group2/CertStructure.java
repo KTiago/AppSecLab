@@ -6,10 +6,13 @@ import org.bouncycastle.asn1.x500.style.BCStyle;
 import org.bouncycastle.asn1.x500.style.IETFUtils;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateHolder;
 
+import java.io.*;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.cert.CertificateEncodingException;
+import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Enumeration;
 import java.util.LinkedList;
@@ -26,13 +29,44 @@ public class CertStructure {
 
     private static CertStructure instance;
     private CertStructure() {
+        initialize();
+    }
 
+    //Needs to be public for tests
+    public void initialize() {
         //Probably easiest if we make everything PKCS12
         try {
             activeCerts = KeyStore.getInstance("PKCS12");
             revokedCerts = KeyStore.getInstance("PKCS12");
             certsWithKeys = KeyStore.getInstance("PKCS12");
         } catch (KeyStoreException e) {
+            e.printStackTrace();
+        }
+
+        //Check if keystores already exist or have to be created
+        File activeCertsFile = new File("activeCerts");
+        File revokedCertsFile = new File("revokedCerts");
+        File certsWithKeysFile = new File("certsWithKeys");
+        try {
+            if(activeCertsFile.exists())
+                activeCerts.load(new FileInputStream(activeCertsFile), "".toCharArray());
+            else
+                activeCerts.load(null,null);
+
+            if(revokedCertsFile.exists())
+                revokedCerts.load(new FileInputStream(revokedCertsFile), "".toCharArray());
+            else
+                revokedCerts.load(null,null);
+
+            if(certsWithKeysFile.exists())
+                certsWithKeys.load(new FileInputStream(certsWithKeysFile), "".toCharArray());
+            else
+                certsWithKeys.load(null,null);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (CertificateException e) {
             e.printStackTrace();
         }
     }
@@ -44,14 +78,41 @@ public class CertStructure {
         return CertStructure.instance;
     }
 
-    public void setKeyCert(X509Certificate crt, PrivateKey key) {
-
-        //certsWithKeys.setKeyEntry(getCnFromCert(crt),key,"".toCharArray(),chain)
-    }
-
     public void setActiveCert(X509Certificate crt) {
         try {
             activeCerts.setCertificateEntry(getCnFromCert(crt), crt);
+            activeCerts.store(new FileOutputStream("activeCerts"),"".toCharArray());
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    //not atomic, but I guess we don't need to think about concurrency
+    public boolean setRevokedCert(String email) {
+        //Check if email is valid first
+        try {
+            if(!activeCerts.containsAlias(email)) return false;
+            revokedCerts.setCertificateEntry(email,activeCerts.getCertificate(email));
+            activeCerts.deleteEntry(email);
+            return true;
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public void setKeyCert(X509Certificate[] chain, PrivateKey key) {
+
+        try {
+            certsWithKeys.setKeyEntry(getCnFromCert(chain[0]),key,"".toCharArray(),chain);
         } catch (KeyStoreException e) {
             e.printStackTrace();
         }
@@ -81,19 +142,7 @@ public class CertStructure {
         return serials;
     }
 
-    //not atomic, but I guess we don't need to think about concurrency
-    public void revokeCert(String email) {
-        //Check if email is valid first
-        try {
-            if(!activeCerts.containsAlias(email)) return;
-            revokedCerts.setCertificateEntry(email,activeCerts.getCertificate(email));
-            activeCerts.deleteEntry(email);
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public boolean isValid(String email) {
+    public boolean isActiveCert(String email) {
         try {
             return activeCerts.containsAlias(email);
         } catch (KeyStoreException e) {
@@ -103,7 +152,7 @@ public class CertStructure {
         return false;
     }
 
-    public boolean isRevoked(String email) {
+    public boolean isRevokedCert(String email) {
         try {
             return revokedCerts.containsAlias(email);
         } catch (KeyStoreException e) {
@@ -111,6 +160,16 @@ public class CertStructure {
         }
         //If the above check threw an exception, it shouldn't be tretaed as valid
         return true;
+    }
+
+    public boolean isKeyCert(String email) {
+        try {
+            return certsWithKeys.containsAlias(email);
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        }
+
+        return false;
     }
 
     private String getCnFromCert(X509Certificate crt) {

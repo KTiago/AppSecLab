@@ -14,6 +14,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
@@ -30,6 +31,8 @@ public class HttpsServer extends NanoHTTPD {
 
         //Define endpoints
         if(path.equals("/getCert")) {
+
+            System.out.println(session.getMethod());
 
             if(!Method.POST.equals(session.getMethod()))
                 return newFixedLengthResponse(Response.Status.OK, "text/plain", "POST Request needed for /getCert");
@@ -49,13 +52,45 @@ public class HttpsServer extends NanoHTTPD {
             String name = obj.get("name").toString();
             name = name.substring(1,name.length()-1);
 
+            if(CertStructure.getInstance().isActiveCert(email))
+                return newFixedLengthResponse(Response.Status.OK, "text/plain", "Certificate already active for that email");
+
             Cert cert = new Cert();
 
             return newChunkedResponse(Response.Status.OK, "application/x-pkcs12", cert.getCert(email,name));
         } else if(path.equals("/revokeCert")) {
+            if(!Method.POST.equals(session.getMethod()))
+                return newFixedLengthResponse(Response.Status.OK, "text/plain", "POST Request needed for /revokeCert");
 
+            Map<String,String> body = new HashMap<>();
+            try {
+                session.parseBody(body);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            JsonReader reader = Json.createReader(new StringReader(body.get("postData")));
+            JsonObject obj = reader.readObject();
+
+            String email = obj.get("email").toString();
+            email = email.substring(1,email.length()-1);
+
+            boolean success = CertStructure.getInstance().setRevokedCert(email);
+
+            if(success)
+                return newFixedLengthResponse(Response.Status.OK, "text/plain", "Success");
+            else
+                return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text/plain", "Could not revoke certificate");
         } else if(path.equals("/revokeList")) {
 
+            if(!Method.GET.equals(session.getMethod()))
+                return newFixedLengthResponse(Response.Status.OK, "text/plain", "GET Request needed for /revokeCert");
+
+            List<String> serialList = CertStructure.getInstance().getRevokedList();
+            for(String str: serialList)
+                System.out.println(str);
+
+            return newFixedLengthResponse(Response.Status.OK, "text/plain", "Success");
         }
 
         return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text/plain", "Request not properly formed");
