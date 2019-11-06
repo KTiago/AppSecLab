@@ -7,6 +7,7 @@ import org.bouncycastle.asn1.x500.style.BCStyle;
 import org.bouncycastle.asn1.x500.style.IETFUtils;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateHolder;
 import org.bouncycastle.operator.OperatorCreationException;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -26,48 +27,35 @@ import static junit.framework.TestCase.assertTrue;
 public class CertTest {
 
     @Before
-    public void setup() throws IOException, CertificateException, NoSuchAlgorithmException, UnrecoverableKeyException, InvalidKeyException, SignatureException, NoSuchProviderException, OperatorCreationException, KeyStoreException, InvalidKeySpecException {
-        CACore.main(null);
+    public void setup() throws IOException, CertificateException, NoSuchAlgorithmException, UnrecoverableKeyException, InvalidKeyException, SignatureException, NoSuchProviderException, OperatorCreationException, KeyStoreException, InvalidKeySpecException, InterruptedException {
+        UtilsForTests.setUp();
+    }
+
+    @After
+    public void tearDown() {
+        CACore.shutdown();
+        File tmp = new File("pkcstest");
+        if(tmp.exists())
+            tmp.delete();
     }
 
     @Test
     public void getCert() throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
 
-        URL url = new URL("https://localhost:"+CACore.PORT_NUMBER+"/getCert");
-        HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
-
-        conn.setSSLSocketFactory(acceptAllCerts());
-        conn.setHostnameVerifier((hostname, session) -> true);
-
-        conn.setRequestMethod("POST");
-        conn.setRequestProperty("Accept", "application/json");
-        conn.setRequestProperty("Content-Type", "application/jose+json");
-        conn.setDoOutput(true);
-
         String testEmail = "waf@wuf.com", testName = "Some Name";
         JsonObject req = Json.createObjectBuilder()
-                .add("email",testEmail)
-                .add("name",testName)
+                .add("email", testEmail)
+                .add("name", testName)
                 .build();
 
-        byte[] payload = req.toString().getBytes("UTF-8");
-
-        if(payload != null)
-            conn.setFixedLengthStreamingMode(payload.length);
-
-        conn.connect();
-
-        if(payload != null) {
-            OutputStream out = conn.getOutputStream();
-            out.write(payload);
-        }
+        InputStream in = UtilsForTests.sendPayload("https://localhost:" + CACore.PORT_NUMBER + "/getCert", req, "POST");
 
         File targetFile = new File("pkcstest");
         OutputStream outStream = new FileOutputStream(targetFile);
 
         byte[] buffer = new byte[8192];
         int bytesRead;
-        while ((bytesRead = conn.getInputStream().read(buffer)) != -1) {
+        while ((bytesRead = in.read(buffer)) != -1) {
             outStream.write(buffer, 0, bytesRead);
         }
         outStream.close();
@@ -77,7 +65,7 @@ public class CertTest {
 
         Certificate[] chain = keystore.getCertificateChain(testEmail);
 
-        X509Certificate leafCert = (X509Certificate)chain[0];
+        X509Certificate leafCert = (X509Certificate) chain[0];
 
         X500Name x500name = new JcaX509CertificateHolder(leafCert).getSubject();
         RDN cn = x500name.getRDNs(BCStyle.CN)[0];
@@ -87,10 +75,6 @@ public class CertTest {
         assertTrue(IETFUtils.valueToString(ou.getFirst().getValue()).equals(testName));
 
         //To verify if the signing was done with the root key, we have to load it
-        final String ROOT_CA = "certs/root/rootstore.p12";
-        final String ROOT_CA_PASSWORD = "wafwaf";
-        final String ROOT_CA_ALIAS = "rootcert";
-
         KeyStore rootStore = KeyStore.getInstance("PKCS12");
         rootStore.load(new FileInputStream("certs/root/rootstore.p12"), "wafwaf".toCharArray());
 
@@ -101,32 +85,5 @@ public class CertTest {
         } catch (Exception e) {
             assertTrue(false);
         }
-        assertTrue(true);
-
-        File tmp = new File("pkcstest");
-        assertTrue(tmp.delete());
     }
-
-    //Accept all certificates on the server for testing purposes
-    private SSLSocketFactory acceptAllCerts() throws IOException, KeyStoreException, NoSuchAlgorithmException, KeyManagementException, CertificateException {
-
-        SSLSocketFactory sslSocketFactory;
-
-        SSLContext sc = SSLContext.getInstance("TLS");
-        sc.init(null, trustAllCerts, new java.security.SecureRandom());
-        HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
-
-        sslSocketFactory = sc.getSocketFactory();
-
-        return sslSocketFactory;
-    }
-
-    TrustManager[] trustAllCerts = new TrustManager[]{
-            new X509TrustManager() {
-                public java.security.cert.X509Certificate[] getAcceptedIssuers() { return null; }
-                public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
-                public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
-            }
-    };
-
 }

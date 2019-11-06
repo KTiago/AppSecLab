@@ -106,8 +106,8 @@ public class Cert {
             keystore.store(new FileOutputStream("certs/certGen"), "".toCharArray());
 
             //Add to local structures as well
-            //CertStructure.getInstance().setActiveCert(chain[0]);
-            //CertStructure.getInstance().setKeyCert(chain[0],keyPair.getPrivate());
+            CertStructure.getInstance().setActiveCert(chain[0]);
+            CertStructure.getInstance().setKeyCert(chain,keyPair.getPrivate());
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
