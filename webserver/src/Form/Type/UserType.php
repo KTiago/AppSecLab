@@ -19,13 +19,13 @@ class UserType extends AbstractType
                 'attr' => array(
                     'readonly' => true,
                 ),
-                'label' => "Identifier"
+                'label' => "Username"
             ))
             ->add('firstname', TextType::class, ['label' => 'First name'])
             ->add('lastname', TextType::class, ['label' => 'Last name'])
             ->add('email', TextType::class, ['label' => 'E-Mail address'])
             ->add('pwd', PasswordType::class, ['label' => 'Password'])
-            ->add('save', SubmitType::class, ['label' => 'Save']);
+            ->add('save', SubmitType::class, ['label' => 'Save & Request certificate']);
     }
 
     public function configureOptions(OptionsResolver $resolver)

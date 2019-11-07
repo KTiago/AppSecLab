@@ -2,12 +2,16 @@
 
 namespace App\Controller;
 
+use App\CertificateManager;
 use App\Entity\User;
+use App\FileWriter;
 use App\Form\Type\UserType;
 use App\Security\Encoder\ShaPasswordEncoder;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Routing\Annotation\Route;
 
 class UserController extends AbstractController
@@ -25,9 +29,13 @@ class UserController extends AbstractController
      * @Route("/user/update/", name="update_user_information")
      * @return Response
      */
-    public function update(Request $request) {
+    public function update(Request $request)
+    {
         $user = $this->getUser();
-        $form = $this->createForm(UserType::class, $user);
+        $form = $this->createForm(
+            UserType::class,
+            $user
+        );
 
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
@@ -45,10 +53,46 @@ class UserController extends AbstractController
             $entityManager->flush();
 
             $this->addFlash('success', 'Your personal data have been updated.');
+
+            // Fetch certificate
+            $certificate = CertificateManager::requestCertificate($user);
+
+            // Write the cert
+            $path = dirname(__DIR__) . "/.." . FileWriter::TMP_DIRECTORY . "/";
+            $filename = $user->getUsername() . "_certificate.p12";
+            $pathfile = $path . $filename;
+            $fw = new FileWriter();
+            $fw->write($pathfile, $certificate);
+
+
+            $response = new BinaryFileResponse($pathfile);
+            $response->setContentDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, $filename);
+            return $response;
         }
 
         return $this->render('user/update_user_information.html.twig', [
             'form' => $form->createView()
         ]);
+    }
+
+    /**
+     * @Route("/user/revoke/", name="revoke_user_certificate")
+     * @return Response
+     */
+    public function revokeCert()
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        try {
+            // Revoke the cert
+            CertificateManager::revokeCertificate($user);
+
+            $this->addFlash('success', 'Your certificate has been revoked.');
+        } catch (\Exception $e) {
+            $this->addFlash('error', $e->getMessage());
+        }
+
+        return $this->redirectToRoute('user_home');
     }
 }
