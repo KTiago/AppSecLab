@@ -18,6 +18,7 @@ class CertificateManager
     private const GET_CERTIFICATE_ENDPOINT = "/getCert";
     private const GET_REVOKED_LIST_ENDPOINT = "/revokeList";
     private const REVOKE_CERTIFICATE_ENDPOINT = "/revokeCert";
+    private const GET_ADMIN_INFO = "/getAdminInfos";
     private const CERT_NAME = "/cacore.pem";
 
     public const STATUS_FIELD = "status";
@@ -109,6 +110,26 @@ class CertificateManager
         self::checkValidity($response->toArray());
 
         return $response->toArray()[self::DATA_FIELD];
+    }
+
+    public static function getAdminInfo() {
+        $url = self::CA_CORE_URL . self::GET_ADMIN_INFO;
+        $cert = dirname(__DIR__) . self::CERT_NAME;
+
+        $client = HttpClient::create();
+        $response = $client->request(
+            'GET',
+            $url,
+            [
+                'verify_peer' => 0,
+                'verify_host' => FALSE,
+                'cafile' => $cert,
+            ]
+        );
+
+        self::checkValidity($response->toArray());
+
+        return $response->toArray();
     }
 
     private static function checkValidity(array $response) {
