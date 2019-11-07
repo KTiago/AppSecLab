@@ -114,7 +114,7 @@ public class HttpsServer extends NanoHTTPD {
 
                 if (!Method.POST.equals(session.getMethod())) {
                     JSONAnswer ans = new JSONAnswer(Status.INVALID, "POST Request needed for /getCert");
-                    return newFixedLengthResponse(Response.Status.BAD_REQUEST, "application/json", ans.getJson());
+                    return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
                 }
 
                 Map<String, String> body = new HashMap<>();
@@ -132,7 +132,7 @@ public class HttpsServer extends NanoHTTPD {
 
                 if (CertStructure.getInstance().isActiveCert(email)) {
                     JSONAnswer ans = new JSONAnswer(Status.INVALID, "Certificate already active for that email");
-                    return newFixedLengthResponse(Response.Status.BAD_REQUEST, "application/json", ans.getJson());
+                    return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
                 }
 
                 Cert cert = new Cert();
@@ -145,7 +145,7 @@ public class HttpsServer extends NanoHTTPD {
             case "/revokeCert": {
                 if (!Method.POST.equals(session.getMethod())) {
                     JSONAnswer ans = new JSONAnswer(Status.INVALID, "POST Request needed for /revokeCert");
-                    return newFixedLengthResponse(Response.Status.BAD_REQUEST, "application/json", ans.getJson());
+                    return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
                 }
 
                 Map<String, String> body = new HashMap<>();
@@ -165,7 +165,7 @@ public class HttpsServer extends NanoHTTPD {
                     return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
                 } else {
                     JSONAnswer ans = new JSONAnswer(Status.INVALID, "Could not revoke certificate");
-                    return newFixedLengthResponse(Response.Status.BAD_REQUEST, "application/json", ans.getJson());
+                    return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
                 }
             }
             case "/revokeList": {
@@ -186,7 +186,7 @@ public class HttpsServer extends NanoHTTPD {
             }
             default:
                 JSONAnswer ans = new JSONAnswer(Status.INVALID, "Request not properly formed");
-                return newFixedLengthResponse(Response.Status.BAD_REQUEST, "json/application", ans.getJson());
+                return newFixedLengthResponse(Response.Status.OK, "json/application", ans.getJson());
         }
     }
 
