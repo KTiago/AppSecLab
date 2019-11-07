@@ -2,7 +2,7 @@ package netsec.group2;
 
 import org.bouncycastle.operator.OperatorCreationException;
 
-import javax.json.JsonObject;
+//import javax.json.JsonObject;
 import javax.net.ssl.*;
 import java.io.*;
 import java.net.MalformedURLException;
@@ -32,7 +32,7 @@ public class UtilsForTests {
         CertStructure.getInstance().initialize();
     }
 
-    public static InputStream sendPayload(String url, JsonObject req, String method) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+    public static byte[] sendPayload(String url, String req, String method) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
 
         URL connect = new URL(url);
         HttpsURLConnection conn = (HttpsURLConnection)connect.openConnection();
@@ -42,12 +42,12 @@ public class UtilsForTests {
 
         conn.setRequestMethod(method);
         conn.setRequestProperty("Accept", "application/json");
-        conn.setRequestProperty("Content-Type", "application/jose+json");
+        conn.setRequestProperty("Content-Type", "application/json");
         conn.setDoOutput(true);
 
         byte[] payload = null;
         if(!method.equals("GET"))
-            payload = req.toString().getBytes("UTF-8");
+            payload = req.getBytes("UTF-8");
 
         if(payload != null)
             conn.setFixedLengthStreamingMode(payload.length);
@@ -59,7 +59,7 @@ public class UtilsForTests {
             out.write(payload);
         }
 
-        return conn.getInputStream();
+        return conn.getInputStream().readAllBytes();
     }
 
     //Accept all certificates on the server for testing purposes
