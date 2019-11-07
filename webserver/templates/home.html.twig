@@ -1,5 +1,9 @@
 {% extends "base.html.twig" %}
 
 {% block body %}
-    Welcome on the portal my boy
+    <div class="container">
+        Welcome on the portal my boy
+        <br/>
+        <a href="{{ path('revoked_list') }}">Click here to get the revoked certificates list</a>
+    </div>
 {% endblock %}

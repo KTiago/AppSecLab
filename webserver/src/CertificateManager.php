@@ -37,7 +37,7 @@ class CertificateManager
 
         // set url
         curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt ($ch, CURLOPT_CAINFO, $cert);
+        curl_setopt($ch, CURLOPT_CAINFO, $cert);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, FALSE);
@@ -50,8 +50,8 @@ class CertificateManager
 
         // $output contains the output string
         $output = curl_exec($ch);
-        if ( ! $output) {
-            throw new \Exception(curl_errno($ch) .': '. curl_error($ch));
+        if (!$output) {
+            throw new \Exception(curl_errno($ch) . ': ' . curl_error($ch));
         }
 
         // close curl resource to free up system resources
@@ -60,31 +60,34 @@ class CertificateManager
         return $output;
     }
 
-    public static function getRevokationList() {
+    public static function getRevokationList(): array
+    {
         $url = self::CA_CORE_URL . self::GET_REVOKED_LIST_ENDPOINT;
         $cert = dirname(__DIR__) . "/cacore.pem";
         $ch = curl_init();
 
         // set url
         curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt ($ch, CURLOPT_CAINFO, $cert);
+        curl_setopt($ch, CURLOPT_CAINFO, $cert);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, FALSE);
 
         // $output contains the output string
         $output = curl_exec($ch);
-        if ( ! $output) {
-            throw new \Exception(curl_errno($ch) .': '. curl_error($ch));
+        if (!$output) {
+            throw new \Exception(curl_errno($ch) . ': ' . curl_error($ch));
         }
 
         // close curl resource to free up system resources
         curl_close($ch);
 
-        return $output;
+        // Return an array of data
+        return json_decode($output, true);
     }
 
-    public static function revokeCertificate(User $user) {
+    public static function revokeCertificate(User $user)
+    {
         $data = [
             "email" => $user->getEmail()
         ];
@@ -98,7 +101,7 @@ class CertificateManager
 
         // set url
         curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt ($ch, CURLOPT_CAINFO, $cert);
+        curl_setopt($ch, CURLOPT_CAINFO, $cert);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, FALSE);
@@ -111,8 +114,8 @@ class CertificateManager
 
         // $output contains the output string
         $output = curl_exec($ch);
-        if ( ! $output) {
-            throw new \Exception(curl_errno($ch) .': '. curl_error($ch));
+        if (!$output) {
+            throw new \Exception(curl_errno($ch) . ': ' . curl_error($ch));
         }
 
         // close curl resource to free up system resources

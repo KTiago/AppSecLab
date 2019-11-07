@@ -2,8 +2,8 @@
 
 namespace App\Controller;
 
-use App\Security\Encoder\ShaPasswordEncoder;
-use Symfony\Component\HttpFoundation\Response;
+use App\CertificateManager;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 
@@ -14,8 +14,15 @@ class HomeController extends AbstractController
      */
     public function index()
     {
-        $pe = new ShaPasswordEncoder();
-
         return $this->render('home.html.twig');
+    }
+
+    /**
+     * @Route("/revokedList", name="revoked_list")
+     */
+    public function getRevokedList() {
+        $list = CertificateManager::getRevokationList();
+
+        return new JsonResponse($list);
     }
 }
