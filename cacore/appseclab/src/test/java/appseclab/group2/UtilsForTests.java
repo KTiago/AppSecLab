@@ -1,11 +1,9 @@
-package netsec.group2;
+package appseclab.group2;
 
 import org.bouncycastle.operator.OperatorCreationException;
 
-import javax.json.JsonObject;
 import javax.net.ssl.*;
 import java.io.*;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.*;
 import java.security.cert.CertificateException;
@@ -32,7 +30,7 @@ public class UtilsForTests {
         CertStructure.getInstance().initialize();
     }
 
-    public static InputStream sendPayload(String url, JsonObject req, String method) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+    public static String sendPayload(String url, String req, String method) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
 
         URL connect = new URL(url);
         HttpsURLConnection conn = (HttpsURLConnection)connect.openConnection();
@@ -42,12 +40,12 @@ public class UtilsForTests {
 
         conn.setRequestMethod(method);
         conn.setRequestProperty("Accept", "application/json");
-        conn.setRequestProperty("Content-Type", "application/jose+json");
+        conn.setRequestProperty("Content-Type", "application/json");
         conn.setDoOutput(true);
 
         byte[] payload = null;
         if(!method.equals("GET"))
-            payload = req.toString().getBytes("UTF-8");
+            payload = req.getBytes("UTF-8");
 
         if(payload != null)
             conn.setFixedLengthStreamingMode(payload.length);
@@ -59,7 +57,15 @@ public class UtilsForTests {
             out.write(payload);
         }
 
-        return conn.getInputStream();
+        InputStream in = conn.getInputStream();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        byte[] buffer = new byte[1024];
+        int length = 0;
+        while ((length = in.read(buffer)) != -1) {
+            baos.write(buffer, 0, length);
+        }
+
+        return baos.toString();
     }
 
     //Accept all certificates on the server for testing purposes

@@ -1,4 +1,4 @@
-package netsec.group2;
+package appseclab.group2;
 
 import org.bouncycastle.asn1.x500.RDN;
 import org.bouncycastle.asn1.x500.X500Name;
@@ -16,7 +16,6 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.LinkedList;
 import java.util.List;
 
 //Implemented as singleton
@@ -27,6 +26,10 @@ public class CertStructure {
 
     //This will be regularly backed up
     private KeyStore certsWithKeys;
+
+    private String currentSerialNumber = null;
+    private int revokedCertNumber = 0;
+    private int issuedCertNumber = 0;
 
     private static CertStructure instance;
     private CertStructure() {
@@ -63,11 +66,31 @@ public class CertStructure {
                 certsWithKeys.load(new FileInputStream(certsWithKeysFile), "".toCharArray());
             else
                 certsWithKeys.load(null,null);
+
+            //Init current infos
+            Enumeration<String> aliases = certsWithKeys.aliases();
+            issuedCertNumber = certsWithKeys.size();
+            revokedCertNumber = revokedCerts.size();
+
+            String alias = "";
+            while (aliases.hasMoreElements()) {
+                alias = aliases.nextElement();
+            }
+
+            if (alias.equals("")) {
+                currentSerialNumber = "N/A";
+            } else {
+                X509Certificate tmp = (X509Certificate) certsWithKeys.getCertificate(alias);
+                currentSerialNumber = tmp.getSerialNumber().toString();
+            }
+
         } catch (IOException e) {
             e.printStackTrace();
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
         } catch (CertificateException e) {
+            e.printStackTrace();
+        } catch (KeyStoreException e) {
             e.printStackTrace();
         }
     }
@@ -104,6 +127,7 @@ public class CertStructure {
             revokedCerts.setCertificateEntry(email,activeCerts.getCertificate(email));
             revokedCerts.store(new FileOutputStream("revokedCerts"),"".toCharArray());
             activeCerts.deleteEntry(email);
+            revokedCertNumber++;
             return true;
         } catch (KeyStoreException e) {
             e.printStackTrace();
@@ -124,6 +148,8 @@ public class CertStructure {
         try {
             certsWithKeys.setKeyEntry(getCnFromCert(chain[0]),key,"".toCharArray(),chain);
             certsWithKeys.store(new FileOutputStream("certsWithKeys"), "".toCharArray());
+            currentSerialNumber = chain[0].getSerialNumber().toString();
+            issuedCertNumber++;
         } catch (KeyStoreException e) {
             e.printStackTrace();
         } catch (CertificateException e) {
@@ -189,6 +215,18 @@ public class CertStructure {
         }
 
         return false;
+    }
+
+    public int getIssuedCertNumber() {
+        return issuedCertNumber;
+    }
+
+    public int getRevokedCertNumber() {
+        return revokedCertNumber;
+    }
+
+    public String getSerialNumber() {
+        return currentSerialNumber;
     }
 
     private String getCnFromCert(X509Certificate crt) {
