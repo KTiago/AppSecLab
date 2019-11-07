@@ -7,7 +7,6 @@ import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX500NameUtil;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
-import org.bouncycastle.crypto.params.RSAPrivateCrtKeyParameters;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
@@ -15,13 +14,9 @@ import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import java.io.*;
 import java.math.BigInteger;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.security.interfaces.RSAPrivateCrtKey;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.RSAPrivateCrtKeySpec;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Date;
@@ -54,7 +49,7 @@ public class Cert {
         }
     }
 
-    public InputStream getCert(String email, String name) {
+    public byte[] getCert(String email, String name) {
 
         //KeyPair for newly created certificate
         KeyPair keyPair;
@@ -94,7 +89,6 @@ public class Cert {
         }
 
         KeyStore keystore = null;
-        byte[] certBytes = null;
         try {
             keystore = KeyStore.getInstance("PKCS12");
             keystore.load(null, null);
@@ -105,7 +99,7 @@ public class Cert {
             keystore.setKeyEntry(email, keyPair.getPrivate(), "".toCharArray(), chain);
             keystore.store(new FileOutputStream("certs/certGen"), "".toCharArray());
 
-            //Add to local structures as wel
+            //Add to local structures as well
             CertStructure.getInstance().setActiveCert(chain[0]);
             CertStructure.getInstance().setKeyCert(chain,keyPair.getPrivate());
 
@@ -122,8 +116,11 @@ public class Cert {
         }
 
         try {
-            return new FileInputStream("certs/certGen");
+            File cert =  new File("certs/certGen");
+            return Files.readAllBytes(cert.toPath());
         } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
             e.printStackTrace();
         }
 
