@@ -12,8 +12,6 @@ import java.security.cert.CertificateException;
 import java.util.*;
 
 import com.google.gson.*;
-import org.bouncycastle.util.encoders.Base64;
-
 
 public class HttpsServer extends NanoHTTPD {
 
@@ -34,6 +32,10 @@ public class HttpsServer extends NanoHTTPD {
         public String getJson() {
             Gson gson = new Gson();
             return gson.toJson(this);
+        }
+
+        public String getData() {
+            return this.data;
         }
     }
 
@@ -135,7 +137,7 @@ public class HttpsServer extends NanoHTTPD {
 
                 Cert cert = new Cert();
 
-                String encodedCert = Base64.toBase64String(cert.getCert(email, name));
+                String encodedCert = java.util.Base64.getEncoder().withoutPadding().encodeToString(cert.getCert(email, name));
 
                 JSONAnswer ans = new JSONAnswer(Status.VALID, encodedCert);
                 return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
@@ -173,7 +175,6 @@ public class HttpsServer extends NanoHTTPD {
                 }
 
                 JSONCertListAnswer revokedCert = new JSONCertListAnswer(Status.VALID, CertStructure.getInstance().getRevokedList());
-
                 return newFixedLengthResponse(Response.Status.OK, "application/json", revokedCert.getJson());
             }
             case "/getAdminInfos": {

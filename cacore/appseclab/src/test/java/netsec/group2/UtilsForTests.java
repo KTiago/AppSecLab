@@ -1,5 +1,6 @@
 package netsec.group2;
 
+import com.google.gson.Gson;
 import org.bouncycastle.operator.OperatorCreationException;
 
 //import javax.json.JsonObject;
@@ -32,7 +33,7 @@ public class UtilsForTests {
         CertStructure.getInstance().initialize();
     }
 
-    public static byte[] sendPayload(String url, String req, String method) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+    public static String sendPayload(String url, String req, String method) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
 
         URL connect = new URL(url);
         HttpsURLConnection conn = (HttpsURLConnection)connect.openConnection();
@@ -59,7 +60,15 @@ public class UtilsForTests {
             out.write(payload);
         }
 
-        return conn.getInputStream().readAllBytes();
+        InputStream in = conn.getInputStream();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        byte[] buffer = new byte[1024];
+        int length = 0;
+        while ((length = in.read(buffer)) != -1) {
+            baos.write(buffer, 0, length);
+        }
+
+        return baos.toString();
     }
 
     //Accept all certificates on the server for testing purposes

@@ -2,6 +2,7 @@ package netsec.group2;
 
 
 import com.google.gson.Gson;
+import com.sun.net.httpserver.HttpServer;
 import org.bouncycastle.asn1.x500.RDN;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.style.BCStyle;
@@ -19,6 +20,7 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Base64;
 
 import static junit.framework.TestCase.assertTrue;
 
@@ -41,25 +43,16 @@ public class CertTest {
     public void getCert() throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
 
         String testEmail = "waf@wuf.com", testName = "Some Name";
-        /*JsonObject req = Json.createObjectBuilder()
-                .add("email", testEmail)
-                .add("name", testName)
-                .build();*/
         Gson gson = new Gson();
         HttpsServer.JSONCertQuery q = new HttpsServer.JSONCertQuery(testEmail, testName);
         String req = gson.toJson(q, HttpsServer.JSONCertQuery.class);
 
-
-        byte[] in = UtilsForTests.sendPayload("https://localhost:" + CACore.PORT_NUMBER + "/getCert", req, "POST");
-
+        String ans = UtilsForTests.sendPayload("https://localhost:" + CACore.PORT_NUMBER + "/getCert", req, "POST");
+        HttpsServer.JSONAnswer in = gson.fromJson(ans, HttpsServer.JSONAnswer.class);
+        byte[] c = Base64.getDecoder().decode(in.getData());
         File targetFile = new File("pkcstest");
         OutputStream outStream = new FileOutputStream(targetFile);
-        outStream.write(in);
-        /*byte[] buffer = new byte[8192];
-        int bytesRead;
-        while ((bytesRead = in.read(buffer)) != -1) {
-            outStream.write(buffer, 0, bytesRead);
-        }*/
+        outStream.write(c);
         outStream.close();
 
         KeyStore keystore = KeyStore.getInstance("PKCS12");
