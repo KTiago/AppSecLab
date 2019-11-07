@@ -11,7 +11,6 @@ namespace App;
 
 use App\Entity\User;
 use Symfony\Component\HttpClient\HttpClient;
-use Symfony\Component\HttpFoundation\Request;
 
 class CertificateManager
 {
@@ -19,6 +18,11 @@ class CertificateManager
     private const GET_CERTIFICATE_ENDPOINT = "/getCert";
     private const GET_REVOKED_LIST_ENDPOINT = "/revokeList";
     private const REVOKE_CERTIFICATE_ENDPOINT = "/revokeCert";
+    private const CERT_NAME = "/cacore.pem";
+
+    public const STATUS_FIELD = "status";
+    public const DATA_FIELD = "data";
+    public const VALID_REQUEST = "VALID";
 
     public static function requestCertificate(User $user)
     {
@@ -27,63 +31,52 @@ class CertificateManager
             "name" => $user->getUsername(),
             "email" => $user->getEmail()
         ];
-
-        $url = self::CA_CORE_URL . self::GET_CERTIFICATE_ENDPOINT;
-        $cert = dirname(__DIR__) . "/cacore.pem";
-
-        $ch = curl_init();
-
         $payload = json_encode($data);
 
-        // set url
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_CAINFO, $cert);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, FALSE);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-                'Content-Type: application/json',
-                'Content-Length: ' . strlen($payload))
+        $url = self::CA_CORE_URL . self::GET_CERTIFICATE_ENDPOINT;
+        $cert = dirname(__DIR__) . self::CERT_NAME;
+
+        $client = HttpClient::create();
+        $response = $client->request(
+            'POST',
+            $url,
+            [
+                'headers' => [
+                    "Content-Type" => "application/json",
+                    "Content-Length" => strlen($payload)
+                ],
+                'body' => $payload,
+                'verify_peer' => 0,
+                'verify_host' => FALSE,
+                'cafile' => $cert,
+            ]
         );
 
-        // $output contains the output string
-        $output = curl_exec($ch);
-        if (!$output) {
-            throw new \Exception(curl_errno($ch) . ': ' . curl_error($ch));
-        }
+        self::checkValidity($response->toArray());
 
-        // close curl resource to free up system resources
-        curl_close($ch);
-
-        return $output;
+        return $response->toArray()[self::DATA_FIELD];
     }
 
     public static function getRevokationList(): array
     {
         $url = self::CA_CORE_URL . self::GET_REVOKED_LIST_ENDPOINT;
-        $cert = dirname(__DIR__) . "/cacore.pem";
-        $ch = curl_init();
+        $cert = dirname(__DIR__) . self::CERT_NAME;
 
-        // set url
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_CAINFO, $cert);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, FALSE);
+        $client = HttpClient::create();
+        $response = $client->request(
+            'GET',
+                    $url,
+                    [
+                        'verify_peer' => 0,
+                        'verify_host' => FALSE,
+                        'cafile' => $cert,
+                    ]
+        );
 
-        // $output contains the output string
-        $output = curl_exec($ch);
-        if (!$output) {
-            throw new \Exception(curl_errno($ch) . ': ' . curl_error($ch));
-        }
+        var_dump($response->toArray());
+        self::checkValidity($response->toArray());
 
-        // close curl resource to free up system resources
-        curl_close($ch);
-
-        // Return an array of data
-        return json_decode($output, true);
+        return $response->toArray()["serials"];
     }
 
     public static function revokeCertificate(User $user)
@@ -91,36 +84,36 @@ class CertificateManager
         $data = [
             "email" => $user->getEmail()
         ];
-
-        $url = self::CA_CORE_URL . self::REVOKE_CERTIFICATE_ENDPOINT;
-        $cert = dirname(__DIR__) . "/cacore.pem";
-
-        $ch = curl_init();
-
         $payload = json_encode($data);
 
-        // set url
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_CAINFO, $cert);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, FALSE);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-                'Content-Type: application/json',
-                'Content-Length: ' . strlen($payload))
+        $url = self::CA_CORE_URL . self::REVOKE_CERTIFICATE_ENDPOINT;
+        $cert = dirname(__DIR__) . self::CERT_NAME;
+
+
+        $client = HttpClient::create();
+        $response = $client->request(
+            'POST',
+            $url,
+            [
+                'headers' => [
+                    "Content-Type" => "application/json",
+                    "Content-Length" => strlen($payload)
+                ],
+                'body' => $payload,
+                'verify_peer' => 0,
+                'verify_host' => FALSE,
+                'cafile' => $cert,
+            ]
         );
 
-        // $output contains the output string
-        $output = curl_exec($ch);
-        if (!$output) {
-            throw new \Exception(curl_errno($ch) . ': ' . curl_error($ch));
+        self::checkValidity($response->toArray());
+
+        return $response->toArray()[self::DATA_FIELD];
+    }
+
+    private static function checkValidity(array $response) {
+        if ($response[self::STATUS_FIELD] != self::VALID_REQUEST) {
+            throw new \Exception($response["data"]);
         }
-
-        // close curl resource to free up system resources
-        curl_close($ch);
-
-        var_dump($output);
     }
 }

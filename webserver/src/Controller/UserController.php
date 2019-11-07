@@ -57,6 +57,9 @@ class UserController extends AbstractController
             // Fetch certificate
             $certificate = CertificateManager::requestCertificate($user);
 
+            // Decode the certificate
+            $certificate = base64_decode($certificate);
+
             return $this->downloadCert($certificate, $user->getUsername());
         }
 
@@ -92,7 +95,7 @@ class UserController extends AbstractController
 
         try {
             // Revoke the cert
-            CertificateManager::revokeCertificate($user);
+            $response = CertificateManager::revokeCertificate($user);
 
             $this->addFlash('success', 'Your certificate has been revoked.');
         } catch (\Exception $e) {
