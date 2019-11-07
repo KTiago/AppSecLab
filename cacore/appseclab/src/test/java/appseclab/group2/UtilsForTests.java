@@ -1,12 +1,9 @@
-package netsec.group2;
+package appseclab.group2;
 
-import com.google.gson.Gson;
 import org.bouncycastle.operator.OperatorCreationException;
 
-//import javax.json.JsonObject;
 import javax.net.ssl.*;
 import java.io.*;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.*;
 import java.security.cert.CertificateException;

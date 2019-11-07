@@ -1,8 +1,7 @@
-package netsec.group2;
+package appseclab.group2;
 
 
 import com.google.gson.Gson;
-import com.sun.net.httpserver.HttpServer;
 import org.bouncycastle.asn1.x500.RDN;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.style.BCStyle;

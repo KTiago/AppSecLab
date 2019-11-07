@@ -1,4 +1,4 @@
-package netsec.group2;
+package appseclab.group2;
 
 import fi.iki.elonen.NanoHTTPD;
 

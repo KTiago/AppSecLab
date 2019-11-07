@@ -58,7 +58,7 @@
                     <configuration>
                         <archive>
                             <manifest>
-                                <mainClass>netsec.group2.CACore</mainClass>
+                                <mainClass>appseclab.group2.CACore</mainClass>
                             </manifest>
                         </archive>
                         <descriptorRefs>
