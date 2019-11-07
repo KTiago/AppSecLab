@@ -57,22 +57,28 @@ class UserController extends AbstractController
             // Fetch certificate
             $certificate = CertificateManager::requestCertificate($user);
 
-            // Write the cert
-            $path = dirname(__DIR__) . "/.." . FileWriter::TMP_DIRECTORY . "/";
-            $filename = $user->getUsername() . "_certificate.p12";
-            $pathfile = $path . $filename;
-            $fw = new FileWriter();
-            $fw->write($pathfile, $certificate);
-
-
-            $response = new BinaryFileResponse($pathfile);
-            $response->setContentDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, $filename);
-            return $response;
+            return $this->downloadCert($certificate, $user->getUsername());
         }
 
         return $this->render('user/update_user_information.html.twig', [
             'form' => $form->createView()
         ]);
+    }
+
+    public function downloadCert(string $certificate, string $username)
+    {
+        // Write the cert
+        $path = dirname(__DIR__) . "/.." . FileWriter::TMP_DIRECTORY . "/";
+        $filename = $username . "_certificate.p12";
+        $pathfile = $path . $filename;
+        $fw = new FileWriter();
+        $fw->write($pathfile, $certificate);
+
+        // Make it downloadable for the user
+        $response = new BinaryFileResponse($pathfile);
+        $response->setContentDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, $filename);
+
+        return $response;
     }
 
     /**
