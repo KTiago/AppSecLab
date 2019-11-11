@@ -55,10 +55,10 @@ public class HttpsServer extends NanoHTTPD {
     }
 
     public static class JSONRevokeQuery {
-        private String email = "";
+        private String serialNumber = "";
 
-        public JSONRevokeQuery(String email) {
-            this.email = email;
+        public JSONRevokeQuery(String serialNumber) {
+            this.serialNumber = serialNumber;
         }
     }
 
@@ -137,13 +137,13 @@ public class HttpsServer extends NanoHTTPD {
 
                 CALogger.getInstance().logger.log(Level.INFO, "getCert parameters are email='" + email + "' name='" + name + "'");
 
-                if (CertStructure.getInstance().isActiveCert(email)) {
+                if (CertStructure.getInstance().isCertificateActive(email)) {
                     CALogger.getInstance().logger.log(Level.INFO, "Certificate already active for '" + email + "'");
                     JSONAnswer ans = new JSONAnswer(Status.INVALID, "Certificate already active for that email");
                     return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
                 }
 
-                String encodedCert = java.util.Base64.getEncoder().withoutPadding().encodeToString(CertStructure.getInstance().getCert(email, name));
+                String encodedCert = java.util.Base64.getEncoder().withoutPadding().encodeToString(CertStructure.getInstance().createCert(email, name));
 
                 JSONAnswer ans = new JSONAnswer(Status.VALID, encodedCert);
                 CALogger.getInstance().logger.log(Level.INFO, "New certificate for '" + email + "' sent");
@@ -165,14 +165,14 @@ public class HttpsServer extends NanoHTTPD {
                 }
 
                 Gson gson = new Gson();
-                String email = gson.fromJson(body.get("postData"), JSONRevokeQuery.class).email;
+                String serialNumber = gson.fromJson(body.get("postData"), JSONRevokeQuery.class).serialNumber;
 
-                CALogger.getInstance().logger.log(Level.INFO, "revokeCert parameter is email='" + email + "'");
-                boolean success = CertStructure.getInstance().setRevokedCert(email);
+                CALogger.getInstance().logger.log(Level.INFO, "revokeCert parameter is serialNumber='" + serialNumber + "'");
+                boolean success = CertStructure.getInstance().addRevokedCert(serialNumber);
 
                 if (success) {
                     JSONAnswer ans = new JSONAnswer(Status.VALID, "");
-                    CALogger.getInstance().logger.log(Level.INFO, "Certificate for '" + email + "' as been revoked");
+                    CALogger.getInstance().logger.log(Level.INFO, "Certificate with serial number '" + serialNumber + "' as been revoked");
                     return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
                 } else {
                     JSONAnswer ans = new JSONAnswer(Status.INVALID, "Could not revoke certificate");

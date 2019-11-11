@@ -24,21 +24,18 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Level;
 
 //Implemented as singleton
 public class CertStructure {
-    final String ROOT_CA = "certs/root/rootstore.p12";
-    final String ROOT_CA_PASSWORD = "wafwaf";
-    final String ROOT_CA_ALIAS = "rootcert";
-    final String SIG_ALG = "SHA256WITHRSA";
+    private final String ROOT_CA = "certs/root/rootstore.p12";
+    private final String ROOT_CA_PASSWORD = "wafwaf";
+    private final String ROOT_CA_ALIAS = "rootcert";
+    private final String SIG_ALG = "SHA256WITHRSA";
 
-    final int KEY_SIZE = 2048;
-    final int VALIDITY = 365;
+    private final int KEY_SIZE = 2048;
+    private final int VALIDITY = 365;
 
     private X509Certificate caCert;
     private PrivateKey caPrivKey;
@@ -53,15 +50,9 @@ public class CertStructure {
     private int revokedCertNumber = 0;
     private int issuedCertNumber = 0;
 
-    //private static Logger logger = Logger.getLogger("appseclab.group2.CertStructure");
-
     private static CertStructure instance;
-    private CertStructure() {
-        initialize();
-    }
 
-    //Needs to be public for tests
-    public void initialize() {
+    private CertStructure() {
         //Get the root certificate ready along with its private key
         KeyStore rootStore = null;
         try {
@@ -88,37 +79,29 @@ public class CertStructure {
         File revokedCertsFile = new File("revokedCerts");
         File certsWithKeysFile = new File("certsWithKeys");
         try {
-            if(activeCertsFile.exists())
+            if(activeCertsFile.exists()) {
                 activeCerts.load(new FileInputStream(activeCertsFile), "".toCharArray());
-            else
-                activeCerts.load(null,null);
+            } else {
+                activeCerts.load(null, null);
+            }
 
-            if(revokedCertsFile.exists())
+            if(revokedCertsFile.exists()) {
                 revokedCerts.load(new FileInputStream(revokedCertsFile), "".toCharArray());
-            else
-                revokedCerts.load(null,null);
+            } else {
+                revokedCerts.load(null, null);
+            }
 
-            if(certsWithKeysFile.exists())
+            if(certsWithKeysFile.exists()) {
                 certsWithKeys.load(new FileInputStream(certsWithKeysFile), "".toCharArray());
-            else
-                certsWithKeys.load(null,null);
+            } else {
+                certsWithKeys.load(null, null);
+            }
 
             //Init current infos
-            Enumeration<String> aliases = certsWithKeys.aliases();
-            issuedCertNumber = certsWithKeys.size();
+            issuedCertNumber = activeCerts.size() + revokedCerts.size();
             revokedCertNumber = revokedCerts.size();
 
-            String alias = "";
-            while (aliases.hasMoreElements()) {
-                alias = aliases.nextElement();
-            }
-
-            if (alias.equals("")) {
-                currentSerialNumber = "N/A";
-            } else {
-                X509Certificate tmp = (X509Certificate) certsWithKeys.getCertificate(alias);
-                currentSerialNumber = tmp.getSerialNumber().toString();
-            }
+            currentSerialNumber = initSerialNumber();
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -131,6 +114,33 @@ public class CertStructure {
         }
     }
 
+    private String initSerialNumber() {
+        String sn = null;
+        try {
+            Enumeration<String> emails = activeCerts.aliases();
+            List<BigInteger> serialNumbers = new ArrayList<>();
+            while (emails.hasMoreElements()) {
+                X509Certificate tmp = (X509Certificate) activeCerts.getCertificate(emails.nextElement());
+                serialNumbers.add(tmp.getSerialNumber());
+            }
+
+            Enumeration<String> serials = revokedCerts.aliases();
+            while (serials.hasMoreElements()) {
+                serialNumbers.add(new BigInteger(serials.nextElement()));
+            }
+
+            if (serialNumbers.isEmpty()) {
+                sn = "N/A";
+            } else {
+                Collections.sort(serialNumbers);
+                sn = serialNumbers.get(serialNumbers.size()-1).toString();
+            }
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        }
+        return sn;
+    }
+
     public static CertStructure getInstance () {
         if (CertStructure.instance == null) {
             CertStructure.instance = new CertStructure();
@@ -138,10 +148,10 @@ public class CertStructure {
         return CertStructure.instance;
     }
 
-    public void setActiveCert(X509Certificate crt) {
+    private void addActiveCert(X509Certificate crt) {
         try {
-            activeCerts.setCertificateEntry(getCnFromCert(crt), crt);
-            activeCerts.store(new FileOutputStream("activeCerts"),"".toCharArray());
+            activeCerts.setCertificateEntry(getEmailFromCert(crt), crt);
+            activeCerts.store(new FileOutputStream("activeCerts"), "".toCharArray());
         } catch (KeyStoreException e) {
             e.printStackTrace();
         } catch (CertificateException e) {
@@ -155,17 +165,36 @@ public class CertStructure {
         }
     }
 
-    //not atomic, but I guess we don't need to think about concurrency
-    public boolean setRevokedCert(String email) {
+    private String getEmailFromSN(String serialNumber) {
+        Enumeration<String> emails;
+        try {
+            emails = activeCerts.aliases();
+            while (emails.hasMoreElements()) {
+                String email = emails.nextElement();
+                X509Certificate tmp = (X509Certificate) activeCerts.getCertificate(email);
+                if (serialNumber.equals(tmp.getSerialNumber().toString())) {
+                    return email;
+                }
+            }
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    public boolean addRevokedCert(String serialNumber) {
         //Check if email is valid first
         try {
-            if(!activeCerts.containsAlias(email)) {
+            String email = getEmailFromSN(serialNumber);
+            if(email == null) {
                 return false;
             }
 
-            revokedCerts.setCertificateEntry(email,activeCerts.getCertificate(email));
-            revokedCerts.store(new FileOutputStream("revokedCerts"),"".toCharArray());
+            revokedCerts.setCertificateEntry(serialNumber, activeCerts.getCertificate(email));
+            revokedCerts.store(new FileOutputStream("revokedCerts"), "".toCharArray());
             activeCerts.deleteEntry(email);
+            activeCerts.store(new FileOutputStream("activeCerts"), "".toCharArray());
             revokedCertNumber++;
             return true;
         } catch (KeyStoreException e) {
@@ -182,13 +211,11 @@ public class CertStructure {
         return false;
     }
 
-    public void setKeyCert(X509Certificate[] chain, PrivateKey key) {
+    private void addKeyCert(X509Certificate[] chain, PrivateKey key) {
 
         try {
-            certsWithKeys.setKeyEntry(getCnFromCert(chain[0]),key,"".toCharArray(),chain);
+            certsWithKeys.setKeyEntry(chain[0].getSerialNumber().toString(), key, "".toCharArray(),chain);
             certsWithKeys.store(new FileOutputStream("certsWithKeys"), "".toCharArray());
-            currentSerialNumber = chain[0].getSerialNumber().toString();
-            issuedCertNumber++;
         } catch (KeyStoreException e) {
             e.printStackTrace();
         } catch (CertificateException e) {
@@ -203,30 +230,22 @@ public class CertStructure {
     }
 
     public List<String> getRevokedList() {
-
         List<String> serials = new ArrayList<>();
         Enumeration<String> aliases = null;
         try {
             aliases = revokedCerts.aliases();
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
-        }
 
-        if(aliases == null) return null;
-
-        try {
             while (aliases.hasMoreElements()) {
-                X509Certificate tmp = (X509Certificate) revokedCerts.getCertificate(aliases.nextElement());
-                serials.add(tmp.getSerialNumber().toString());
+                serials.add(aliases.nextElement());
             }
         } catch (KeyStoreException e) {
-                e.printStackTrace();
+            e.printStackTrace();
         }
 
         return serials;
     }
 
-    public boolean isActiveCert(String email) {
+    public boolean isCertificateActive(String email) {
         try {
             return activeCerts.containsAlias(email);
         } catch (KeyStoreException e) {
@@ -236,24 +255,15 @@ public class CertStructure {
         return false;
     }
 
-    public boolean isRevokedCert(String email) {
+    public boolean isCertificateRevoked(String serialNumber) {
         try {
-            return revokedCerts.containsAlias(email);
+            return revokedCerts.containsAlias(serialNumber);
         } catch (KeyStoreException e) {
             e.printStackTrace();
         }
-        //If the above check threw an exception, it shouldn't be tretaed as valid
+
+        //If the above check threw an exception, it shouldn't be treated as valid
         return true;
-    }
-
-    public boolean isKeyCert(String email) {
-        try {
-            return certsWithKeys.containsAlias(email);
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
-        }
-
-        return false;
     }
 
     public int getIssuedCertNumber() {
@@ -268,7 +278,7 @@ public class CertStructure {
         return currentSerialNumber;
     }
 
-    private String getCnFromCert(X509Certificate crt) {
+    private String getEmailFromCert(X509Certificate crt) {
         RDN cn = null;
         try {
             X500Name x500name = new JcaX509CertificateHolder(crt).getSubject();
@@ -279,7 +289,7 @@ public class CertStructure {
         return IETFUtils.valueToString(cn.getFirst().getValue());
     }
 
-    public byte[] getCert(String email, String name) {
+    public byte[] createCert(String email, String name) {
         //KeyPair for newly created certificate
         KeyPair keyPair;
         KeyPairGenerator keyGen = null;
@@ -298,7 +308,7 @@ public class CertStructure {
 
         X509v3CertificateBuilder v3CertBuilder = new JcaX509v3CertificateBuilder(
                 JcaX500NameUtil.getIssuer(caCert),
-                BigInteger.valueOf(System.currentTimeMillis()),
+                getNewSerialNumber(),
                 Date.from(LocalDateTime.now().toInstant(ZoneOffset.UTC)),
                 Date.from(LocalDateTime.now().plusDays(VALIDITY).toInstant(ZoneOffset.UTC)),
                 nameBuilder.build(),
@@ -329,8 +339,9 @@ public class CertStructure {
             keystore.store(new FileOutputStream("certs/certGen"), "".toCharArray());
 
             //Add to local structures as well
-            CertStructure.getInstance().setActiveCert(chain[0]);
-            CertStructure.getInstance().setKeyCert(chain,keyPair.getPrivate());
+            CertStructure.getInstance().addActiveCert(chain[0]);
+            CertStructure.getInstance().addKeyCert(chain, keyPair.getPrivate());
+            issuedCertNumber++;
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -355,5 +366,17 @@ public class CertStructure {
         }
 
         return null;
+    }
+
+    private BigInteger getNewSerialNumber() {
+        BigInteger sn = BigInteger.valueOf(System.currentTimeMillis());
+        if(!currentSerialNumber.equals("N/A")) {
+            while(sn.compareTo(new BigInteger(currentSerialNumber)) <= 0) {
+                sn = BigInteger.valueOf(System.currentTimeMillis());
+            }
+        }
+
+        currentSerialNumber = sn.toString();
+        return sn;
     }
 }

@@ -1,10 +1,7 @@
 package appseclab.group2;
 
 import java.io.IOException;
-import java.util.logging.FileHandler;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
+import java.util.logging.*;
 
 public class CALogger {
 
@@ -14,12 +11,20 @@ public class CALogger {
 
     private CALogger() {
         FileHandler fh;
+        ConsoleHandler ch;
         try {
             fh = new FileHandler("cacore.log", true);
             fh.setFormatter(new SimpleFormatter());
+            fh.setLevel(Level.ALL);
+
+            ch = new ConsoleHandler();
+            ch.setFormatter(new SimpleFormatter());
+            ch.setLevel(Level.ALL);
+
             logger.addHandler(fh);
+            logger.addHandler(ch);
             logger.setUseParentHandlers(false);
-            logger.setLevel(Level.FINEST);
+            logger.setLevel(Level.ALL);
         } catch (IOException e) {
             e.printStackTrace();
         }
