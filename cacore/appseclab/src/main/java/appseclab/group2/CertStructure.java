@@ -31,6 +31,8 @@ public class CertStructure {
     private int revokedCertNumber = 0;
     private int issuedCertNumber = 0;
 
+    //private static Logger logger = Logger.getLogger("appseclab.group2.CertStructure");
+
     private static CertStructure instance;
     private CertStructure() {
         initialize();
@@ -97,7 +99,7 @@ public class CertStructure {
 
     public static CertStructure getInstance () {
         if (CertStructure.instance == null) {
-            CertStructure.instance = new CertStructure ();
+            CertStructure.instance = new CertStructure();
         }
         return CertStructure.instance;
     }
@@ -123,7 +125,10 @@ public class CertStructure {
     public boolean setRevokedCert(String email) {
         //Check if email is valid first
         try {
-            if(!activeCerts.containsAlias(email)) return false;
+            if(!activeCerts.containsAlias(email)) {
+                return false;
+            }
+
             revokedCerts.setCertificateEntry(email,activeCerts.getCertificate(email));
             revokedCerts.store(new FileOutputStream("revokedCerts"),"".toCharArray());
             activeCerts.deleteEntry(email);

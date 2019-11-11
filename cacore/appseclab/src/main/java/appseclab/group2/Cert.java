@@ -20,6 +20,7 @@ import java.security.cert.X509Certificate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Date;
+import java.util.logging.Level;
 
 public class Cert {
 
@@ -34,7 +35,7 @@ public class Cert {
     private X509Certificate caCert;
     private PrivateKey caPrivKey;
 
-    public Cert()  {
+    public Cert() {
 
         //Get the root certificate ready along with its private key
         KeyStore rootStore = null;
@@ -117,6 +118,7 @@ public class Cert {
 
         try {
             File cert =  new File("certs/certGen");
+            CALogger.getInstance().logger.log(Level.INFO, "Certificate created for '" + name + "' with email '" + email + "'");
             return Files.readAllBytes(cert.toPath());
         } catch (FileNotFoundException e) {
             e.printStackTrace();

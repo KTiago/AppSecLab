@@ -4,3 +4,4 @@ target/
 certs/*
 certsWithKeys
 activeCerts
+revokedCerts
