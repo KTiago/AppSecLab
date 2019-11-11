@@ -143,9 +143,7 @@ public class HttpsServer extends NanoHTTPD {
                     return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
                 }
 
-                Cert cert = new Cert();
-
-                String encodedCert = java.util.Base64.getEncoder().withoutPadding().encodeToString(cert.getCert(email, name));
+                String encodedCert = java.util.Base64.getEncoder().withoutPadding().encodeToString(CertStructure.getInstance().getCert(email, name));
 
                 JSONAnswer ans = new JSONAnswer(Status.VALID, encodedCert);
                 CALogger.getInstance().logger.log(Level.INFO, "New certificate for '" + email + "' sent");
