@@ -289,7 +289,7 @@ public class CertStructure {
         return IETFUtils.valueToString(cn.getFirst().getValue());
     }
 
-    public byte[] createCert(String email, String name) {
+    public CertTuple createCert(String email, String name) {
         //KeyPair for newly created certificate
         KeyPair keyPair;
         KeyPairGenerator keyGen = null;
@@ -306,9 +306,10 @@ public class CertStructure {
         nameBuilder.addRDN(BCStyle.CN, email);
         nameBuilder.addRDN(BCStyle.OU, name);
 
+        BigInteger sn = getNewSerialNumber();
         X509v3CertificateBuilder v3CertBuilder = new JcaX509v3CertificateBuilder(
                 JcaX500NameUtil.getIssuer(caCert),
-                getNewSerialNumber(),
+                sn,
                 Date.from(LocalDateTime.now().toInstant(ZoneOffset.UTC)),
                 Date.from(LocalDateTime.now().plusDays(VALIDITY).toInstant(ZoneOffset.UTC)),
                 nameBuilder.build(),
@@ -358,7 +359,7 @@ public class CertStructure {
         try {
             File cert =  new File("certs/certGen");
             CALogger.getInstance().logger.log(Level.INFO, "Certificate created for '" + name + "' with email '" + email + "'");
-            return Files.readAllBytes(cert.toPath());
+            return new CertTuple(Files.readAllBytes(cert.toPath()), sn.toString());
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
