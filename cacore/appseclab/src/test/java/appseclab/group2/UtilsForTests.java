@@ -1,33 +1,33 @@
 package appseclab.group2;
 
-import org.bouncycastle.operator.OperatorCreationException;
-
 import javax.net.ssl.*;
 import java.io.*;
 import java.net.URL;
 import java.security.*;
 import java.security.cert.CertificateException;
-import java.security.spec.InvalidKeySpecException;
 
 public class UtilsForTests {
 
-    public static void setUp() throws IOException, CertificateException, NoSuchAlgorithmException, UnrecoverableKeyException, InvalidKeyException, SignatureException, NoSuchProviderException, OperatorCreationException, KeyStoreException, InvalidKeySpecException, InterruptedException {
+    public static void setUp() throws IOException {
         CACore.main(null);
 
         //Delete all keystores
         File activeCertsFile = new File("activeCerts");
-        if(activeCertsFile.exists())
+        if(activeCertsFile.exists()) {
             activeCertsFile.delete();
+        }
 
         File revokedCertsFile = new File("revokedCerts");
-        if(revokedCertsFile.exists())
+        if(revokedCertsFile.exists()) {
             revokedCertsFile.delete();
+        }
 
         File certsWithKeysFile = new File("certsWithKeys");
-        if(certsWithKeysFile.exists())
+        if(certsWithKeysFile.exists()) {
             certsWithKeysFile.delete();
+        }
 
-        CertStructure.getInstance().initialize();
+        //CertStructure.getInstance().initialize();
     }
 
     public static String sendPayload(String url, String req, String method) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
