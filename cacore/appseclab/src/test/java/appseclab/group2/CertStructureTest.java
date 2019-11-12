@@ -38,7 +38,7 @@ public class CertStructureTest {
         if (f.exists()) {
             f.delete();
         }
-        /*
+
         f = new File("activeCerts");
         if (f.exists()) {
             f.delete();
@@ -50,14 +50,14 @@ public class CertStructureTest {
         f = new File("revokedCerts");
         if (f.exists()) {
             f.delete();
-        }*/
+        }
     }
 
     @Test
     public void getCert() throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
-        String testEmail = "waf@wuf.com", testName = "Some Name";
+        String testEmail = "waf@wuf.com", testName = "Some Name", pw = "wafwaf";
         Gson gson = new Gson();
-        HttpsServer.JSONCertQuery q = new HttpsServer.JSONCertQuery(testEmail, testName);
+        HttpsServer.JSONCertQuery q = new HttpsServer.JSONCertQuery(testEmail, testName, pw);
         String req = gson.toJson(q, HttpsServer.JSONCertQuery.class);
 
         String ans = UtilsForTests.sendPayload("https://localhost:" + CACore.PORT_NUMBER + "/getCert", req, "POST");
@@ -92,9 +92,9 @@ public class CertStructureTest {
     @Test
     public void setActiveCertTest() throws CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, IOException {
 
-        String testEmail = "waf@wuf.com", testName = "Some Name";
+        String testEmail = "waf@wuf.com", testName = "Some Name", pw = "wafwaf";
         Gson gson = new Gson();
-        HttpsServer.JSONCertQuery q = new HttpsServer.JSONCertQuery(testEmail, testName);
+        HttpsServer.JSONCertQuery q = new HttpsServer.JSONCertQuery(testEmail, testName, pw);
         String req = gson.toJson(q, HttpsServer.JSONCertQuery.class);
 
         UtilsForTests.sendPayload("https://localhost:"+CACore.PORT_NUMBER+"/getCert", req, "POST");
@@ -104,10 +104,10 @@ public class CertStructureTest {
 
     @Test
     public void setRevokedCertsTest() throws CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, IOException {
-        String testEmail = "some@randomness.com", testName = "Cheers Mate";
+        String testEmail = "some@randomness.com", testName = "Cheers Mate", pw = "wafwaf";
 
         Gson gson = new Gson();
-        HttpsServer.JSONCertQuery certQuery = new HttpsServer.JSONCertQuery(testEmail, testName);
+        HttpsServer.JSONCertQuery certQuery = new HttpsServer.JSONCertQuery(testEmail, testName, pw);
         String certReq = gson.toJson(certQuery, HttpsServer.JSONCertQuery.class);
 
         //Get a certificate
@@ -121,7 +121,7 @@ public class CertStructureTest {
 
         assertTrue(CertStructure.getInstance().isCertificateActive(testEmail));
 
-        HttpsServer.JSONRevokeQuery revokeQuery = new HttpsServer.JSONRevokeQuery(certSN);
+        HttpsServer.JSONRevokeQuery revokeQuery = new HttpsServer.JSONRevokeQuery(certSN, pw);
         String revokeReq = gson.toJson(revokeQuery, HttpsServer.JSONRevokeQuery.class);
 
         //Revoke the certificate
@@ -134,9 +134,9 @@ public class CertStructureTest {
     @Test
     public void setKeyCertTest() throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
 
-        String testEmail = "waffel@wuffel.com", testName = "Cheers Mate";
+        String testEmail = "waffel@wuffel.com", testName = "Cheers Mate", pw = "wafwaf";
         Gson gson = new Gson();
-        HttpsServer.JSONCertQuery q = new HttpsServer.JSONCertQuery(testEmail, testName);
+        HttpsServer.JSONCertQuery q = new HttpsServer.JSONCertQuery(testEmail, testName, pw);
         String req = gson.toJson(q, HttpsServer.JSONCertQuery.class);
 
         String ans = UtilsForTests.sendPayload("https://localhost:"+CACore.PORT_NUMBER+"/getCert", req, "POST");
@@ -158,9 +158,9 @@ public class CertStructureTest {
         //Map to store the serial number
         Map<String,Boolean> serialMap = new HashMap<>();
 
-        String testEmail1 = "waffel1@wuffel.com", testName1 = "Cheers Mate";
+        String testEmail1 = "waffel1@wuffel.com", testName1 = "Cheers Mate", pw = "wafwaf";
         Gson gson = new Gson();
-        HttpsServer.JSONCertQuery q = new HttpsServer.JSONCertQuery(testEmail1, testName1);
+        HttpsServer.JSONCertQuery q = new HttpsServer.JSONCertQuery(testEmail1, testName1, pw);
         String req = gson.toJson(q, HttpsServer.JSONCertQuery.class);
 
         String ans = UtilsForTests.sendPayload("https://localhost:"+CACore.PORT_NUMBER+"/getCert", req,"POST");
@@ -178,7 +178,7 @@ public class CertStructureTest {
 
         String testEmail2 = "waffel2@wuffel.com", testName2 = "Cheers Mate";
         gson = new Gson();
-        HttpsServer.JSONCertQuery q2 = new HttpsServer.JSONCertQuery(testEmail2, testName2);
+        HttpsServer.JSONCertQuery q2 = new HttpsServer.JSONCertQuery(testEmail2, testName2, pw);
         String req2 = gson.toJson(q2, HttpsServer.JSONCertQuery.class);
 
         ans = UtilsForTests.sendPayload("https://localhost:"+CACore.PORT_NUMBER+"/getCert", req2, "POST");
@@ -196,7 +196,7 @@ public class CertStructureTest {
 
         String testEmail3 = "waffel3@wuffel.com", testName3 = "Cheers Mate";
         gson = new Gson();
-        HttpsServer.JSONCertQuery q3 = new HttpsServer.JSONCertQuery(testEmail3, testName3);
+        HttpsServer.JSONCertQuery q3 = new HttpsServer.JSONCertQuery(testEmail3, testName3, pw);
         String req3 = gson.toJson(q3, HttpsServer.JSONCertQuery.class);
 
         ans = UtilsForTests.sendPayload("https://localhost:"+CACore.PORT_NUMBER+"/getCert", req3, "POST");
@@ -213,22 +213,25 @@ public class CertStructureTest {
         serialMap.put(sn3, Boolean.TRUE);
 
         //Revoke 1st, 2nd and 3rd certificate
-        HttpsServer.JSONRevokeQuery q4 = new HttpsServer.JSONRevokeQuery(sn1);
+        HttpsServer.JSONRevokeQuery q4 = new HttpsServer.JSONRevokeQuery(sn1, pw);
         String req4 = gson.toJson(q4, HttpsServer.JSONRevokeQuery.class);
 
         UtilsForTests.sendPayload("https://localhost:"+CACore.PORT_NUMBER+"/revokeCert", req4, "POST");
 
-        HttpsServer.JSONRevokeQuery q5 = new HttpsServer.JSONRevokeQuery(sn2);
+        HttpsServer.JSONRevokeQuery q5 = new HttpsServer.JSONRevokeQuery(sn2, pw);
         String req5 = gson.toJson(q5, HttpsServer.JSONRevokeQuery.class);
 
         UtilsForTests.sendPayload("https://localhost:"+CACore.PORT_NUMBER+"/revokeCert", req5, "POST");
 
-        HttpsServer.JSONRevokeQuery q6 = new HttpsServer.JSONRevokeQuery(sn3);
+        HttpsServer.JSONRevokeQuery q6 = new HttpsServer.JSONRevokeQuery(sn3, pw);
         String req6 = gson.toJson(q6, HttpsServer.JSONRevokeQuery.class);
 
         UtilsForTests.sendPayload("https://localhost:"+CACore.PORT_NUMBER+"/revokeCert", req6, "POST");
 
-        ans = UtilsForTests.sendPayload("https://localhost:"+CACore.PORT_NUMBER+"/revokeList", null, "GET");
+
+        HttpsServer.JSONQuery q7 = new HttpsServer.JSONQuery(pw);
+        String req7 = gson.toJson(q7, HttpsServer.JSONQuery.class);
+        ans = UtilsForTests.sendPayload("https://localhost:"+CACore.PORT_NUMBER+"/revokeList", req7, "POST");
         HttpsServer.JSONCertListAnswer inL = gson.fromJson(ans, HttpsServer.JSONCertListAnswer.class);
 
         List<String> serials = inL.getList();
