@@ -47,15 +47,20 @@ class UserController extends AbstractController
             $encoded = $encoder->encodePassword($user->getPassword(), null);
             $user->setPwd($encoded);
 
+            // Fetch certificate
+            $data = CertificateManager::requestCertificate($user);
+            $certificate = $data["data"];
+            $sn = $data["sn"];
+
+            // Add the new sn to the user
+            $user->addSn($sn);
+
             // Save the user in the DB
             $entityManager = $this->getDoctrine()->getManager();
             $entityManager->persist($user);
             $entityManager->flush();
 
             $this->addFlash('success', 'Your personal data have been updated.');
-
-            // Fetch certificate
-            $certificate = CertificateManager::requestCertificate($user);
 
             // Decode the certificate
             $certificate = base64_decode($certificate);
@@ -85,7 +90,7 @@ class UserController extends AbstractController
     }
 
     /**
-     * @Route("/user/revoke/", name="revoke_user_certificate")
+     * @Route("/user/revocation/", name="revoke_user_certificate")
      * @return Response
      */
     public function revokeCert()
@@ -93,15 +98,37 @@ class UserController extends AbstractController
         /** @var User $user */
         $user = $this->getUser();
 
+        return $this->render('user/revoke_cert.html.twig', [
+           "sns" => $user->getSn()
+        ]);
+    }
+
+    /**
+     * @Route("/user/revoke/{sn}", name="revoke_cert_sn", requirements={"page"="\d+"})
+     * @param int $sn, the serial number to be revoked
+     * @return Response
+     */
+    public function revokeCertWithSn(int $sn) {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        // Checking is SN belongs to user's array
         try {
+            $user->removeSn($sn);
+
             // Revoke the cert
-            $response = CertificateManager::revokeCertificate($user);
+            CertificateManager::revokeCertificate($sn);
+
+            // Save the user in the DB
+            $entityManager = $this->getDoctrine()->getManager();
+            $entityManager->persist($user);
+            $entityManager->flush();
 
             $this->addFlash('success', 'Your certificate has been revoked.');
         } catch (\Exception $e) {
             $this->addFlash('error', $e->getMessage());
         }
 
-        return $this->redirectToRoute('user_home');
+        return $this->redirectToRoute('revoke_user_certificate');
     }
 }

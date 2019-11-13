@@ -24,6 +24,11 @@ class User implements UserInterface
     private $roles = [];
 
     /**
+     * @ORM\Column(type="json")
+     */
+    private $sn = [];
+
+    /**
      * @var string The hashed password
      * @ORM\Column(type="string", length=64)
      */
@@ -76,6 +81,46 @@ class User implements UserInterface
         $this->roles = $roles;
 
         return $this;
+    }
+
+    public function getSn(): array
+    {
+        return (array)$this->sn;
+    }
+
+    public function setSn(array $sn): self
+    {
+        $this->sn = $sn;
+
+        return $this;
+    }
+
+    public function addSn(int $sn): self
+    {
+        $current = $this->getSn();
+        array_push($current, $sn);
+
+        return $this->setSn($current);
+    }
+
+    public function removeSn(int $sn): self
+    {
+        $key = $this->hasSn($sn);
+
+        // Fix because since key can be 0 and 0 == false...
+        if (is_bool($key) && !$key) {
+            throw new \InvalidArgumentException("Invalid SN value");
+        }
+
+        $current = $this->getSn();
+        unset($current[$key]);
+
+        return $this->setSn($current);
+    }
+
+    public function hasSn(int $sn)
+    {
+        return array_search($sn, $this->getSn());
     }
 
     /**
@@ -134,11 +179,13 @@ class User implements UserInterface
         return $this->uid;
     }
 
-    public function setUsername(string $username) {
+    public function setUsername(string $username)
+    {
         return $this->setUid($username);
     }
 
-    public function setPassword(string $password) {
+    public function setPassword(string $password)
+    {
         return $this->setPwd($password);
     }
 

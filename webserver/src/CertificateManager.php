@@ -25,12 +25,18 @@ class CertificateManager
     public const DATA_FIELD = "data";
     public const VALID_REQUEST = "VALID";
 
+    private static function getCaSharedSecret(): string
+    {
+        return $_SERVER['CA_SHARED_SECRET'];
+    }
+
     public static function requestCertificate(User $user)
     {
         // Request's data
         $data = [
             "name" => $user->getUsername(),
-            "email" => $user->getEmail()
+            "email" => $user->getEmail(),
+            "pw" => self::getCaSharedSecret()
         ];
         $payload = json_encode($data);
 
@@ -55,35 +61,45 @@ class CertificateManager
 
         self::checkValidity($response->toArray());
 
-        return $response->toArray()[self::DATA_FIELD];
+        var_dump($response->toArray());
+
+        return $response->toArray();
     }
 
     public static function getRevokationList(): array
     {
+        $data = ["pw" => self::getCaSharedSecret()];
+        $payload = json_encode($data);
+
         $url = self::CA_CORE_URL . self::GET_REVOKED_LIST_ENDPOINT;
         $cert = dirname(__DIR__) . self::CERT_NAME;
 
         $client = HttpClient::create();
         $response = $client->request(
-            'GET',
-                    $url,
-                    [
-                        'verify_peer' => 0,
-                        'verify_host' => FALSE,
-                        'cafile' => $cert,
-                    ]
+            'POST',
+            $url,
+            [
+                'headers' => [
+                    "Content-Type" => "application/json",
+                    "Content-Length" => strlen($payload)
+                ],
+                'body' => $payload,
+                'verify_peer' => 0,
+                'verify_host' => FALSE,
+                'cafile' => $cert,
+            ]
         );
 
-        var_dump($response->toArray());
         self::checkValidity($response->toArray());
 
         return $response->toArray()["serials"];
     }
 
-    public static function revokeCertificate(User $user)
+    public static function revokeCertificate(int $sn)
     {
         $data = [
-            "email" => $user->getEmail()
+            "serialNumber" => $sn,
+            "pw" => self::getCaSharedSecret()
         ];
         $payload = json_encode($data);
 
@@ -112,15 +128,24 @@ class CertificateManager
         return $response->toArray()[self::DATA_FIELD];
     }
 
-    public static function getAdminInfo() {
+    public static function getAdminInfo()
+    {
+        $data = ["pw" => self::getCaSharedSecret()];
+        $payload = json_encode($data);
+
         $url = self::CA_CORE_URL . self::GET_ADMIN_INFO;
         $cert = dirname(__DIR__) . self::CERT_NAME;
 
         $client = HttpClient::create();
         $response = $client->request(
-            'GET',
+            'POST',
             $url,
             [
+                'headers' => [
+                    "Content-Type" => "application/json",
+                    "Content-Length" => strlen($payload)
+                ],
+                'body' => $payload,
                 'verify_peer' => 0,
                 'verify_host' => FALSE,
                 'cafile' => $cert,
@@ -132,7 +157,8 @@ class CertificateManager
         return $response->toArray();
     }
 
-    private static function checkValidity(array $response) {
+    private static function checkValidity(array $response)
+    {
         if ($response[self::STATUS_FIELD] != self::VALID_REQUEST) {
             throw new \Exception($response["data"]);
         }
