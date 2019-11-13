@@ -8,7 +8,9 @@ import org.bouncycastle.asn1.x500.style.IETFUtils;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateHolder;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.contrib.java.lang.system.EnvironmentVariables;
 
 import java.io.*;
 
@@ -25,10 +27,36 @@ import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
 
 public class CertStructureTest {
+    @Rule
+    public final EnvironmentVariables environmentVariables
+            = new EnvironmentVariables();
 
     @Before
     public void setUp() throws IOException {
-        UtilsForTests.setUp();
+        environmentVariables.set("shared_pw", "wafwaf");
+        environmentVariables.set("rootCertStore", "wafwaf");
+        environmentVariables.set("rootCertStoreLocation", "certs/root/rootstore.p12");//TODO: change that
+        environmentVariables.set("certsWithKeys", "wafwaf");
+        environmentVariables.set("certsWithKeysFilename", "test_certsWithKeys");
+        environmentVariables.set("revokedCertFilename", "test_revokedCert");
+        environmentVariables.set("activeCertFilename", "test_activeCert");
+
+        //Delete all tests keyStores
+        File activeCertsFile = new File(System.getenv("activeCertFilename"));
+        if(activeCertsFile.exists()) {
+            activeCertsFile.delete();
+        }
+
+        File revokedCertsFile = new File(System.getenv("revokedCertFilename"));
+        if(revokedCertsFile.exists()) {
+            revokedCertsFile.delete();
+        }
+
+        File certsWithKeysFile = new File(System.getenv("certsWithKeysFilename"));
+        if(certsWithKeysFile.exists()) {
+            certsWithKeysFile.delete();
+        }
+        CACore.main(null);
     }
 
     @After
@@ -39,23 +67,26 @@ public class CertStructureTest {
             f.delete();
         }
 
-        f = new File("activeCerts");
-        if (f.exists()) {
-            f.delete();
+        //Delete all tests keyStores
+        File activeCertsFile = new File(System.getenv("activeCertFilename"));
+        if(activeCertsFile.exists()) {
+            activeCertsFile.delete();
         }
-        f = new File("certsWithKeys");
-        if (f.exists()) {
-            f.delete();
+
+        File revokedCertsFile = new File(System.getenv("revokedCertFilename"));
+        if(revokedCertsFile.exists()) {
+            revokedCertsFile.delete();
         }
-        f = new File("revokedCerts");
-        if (f.exists()) {
-            f.delete();
+
+        File certsWithKeysFile = new File(System.getenv("certsWithKeysFilename"));
+        if(certsWithKeysFile.exists()) {
+            certsWithKeysFile.delete();
         }
     }
 
     @Test
     public void getCert() throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
-        String testEmail = "waf@wuf.com", testName = "Some Name", pw = "wafwaf";
+        String testEmail = "waf@wuf.com", testName = "Some Name", pw = System.getenv("shared_pw");
         Gson gson = new Gson();
         HttpsServer.JSONCertQuery q = new HttpsServer.JSONCertQuery(testEmail, testName, pw);
         String req = gson.toJson(q, HttpsServer.JSONCertQuery.class);
@@ -78,7 +109,7 @@ public class CertStructureTest {
 
         //To verify if the signing was done with the root key, we have to load it
         KeyStore rootStore = KeyStore.getInstance("PKCS12");
-        rootStore.load(new FileInputStream("certs/root/rootstore.p12"), "wafwaf".toCharArray());
+        rootStore.load(new FileInputStream(System.getenv("rootCertStoreLocation")), System.getenv("rootCertStore").toCharArray());
 
         Certificate rootCert = rootStore.getCertificate("rootcert");
 
@@ -92,7 +123,7 @@ public class CertStructureTest {
     @Test
     public void setActiveCertTest() throws CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, IOException {
 
-        String testEmail = "waf@wuf.com", testName = "Some Name", pw = "wafwaf";
+        String testEmail = "waf@wuf.com", testName = "Some Name", pw = System.getenv("shared_pw");
         Gson gson = new Gson();
         HttpsServer.JSONCertQuery q = new HttpsServer.JSONCertQuery(testEmail, testName, pw);
         String req = gson.toJson(q, HttpsServer.JSONCertQuery.class);
@@ -104,7 +135,7 @@ public class CertStructureTest {
 
     @Test
     public void setRevokedCertsTest() throws CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, IOException {
-        String testEmail = "some@randomness.com", testName = "Cheers Mate", pw = "wafwaf";
+        String testEmail = "some@randomness.com", testName = "Cheers Mate", pw = System.getenv("shared_pw");
 
         Gson gson = new Gson();
         HttpsServer.JSONCertQuery certQuery = new HttpsServer.JSONCertQuery(testEmail, testName, pw);
@@ -134,7 +165,7 @@ public class CertStructureTest {
     @Test
     public void setKeyCertTest() throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
 
-        String testEmail = "waffel@wuffel.com", testName = "Cheers Mate", pw = "wafwaf";
+        String testEmail = "waffel@wuffel.com", testName = "Cheers Mate", pw = System.getenv("shared_pw");
         Gson gson = new Gson();
         HttpsServer.JSONCertQuery q = new HttpsServer.JSONCertQuery(testEmail, testName, pw);
         String req = gson.toJson(q, HttpsServer.JSONCertQuery.class);
@@ -148,8 +179,8 @@ public class CertStructureTest {
         String certSN = certificate.getSerialNumber().toString();
 
         KeyStore certsWithKeys = KeyStore.getInstance("PKCS12");
-        File certsWithKeysFile = new File("certsWithKeys");
-        certsWithKeys.load(new FileInputStream(certsWithKeysFile), "".toCharArray());
+        File certsWithKeysFile = new File(System.getenv("certsWithKeysFilename"));
+        certsWithKeys.load(new FileInputStream(certsWithKeysFile), System.getenv("certsWithKeys").toCharArray());
         assertTrue(certsWithKeys.containsAlias(certSN));
     }
 

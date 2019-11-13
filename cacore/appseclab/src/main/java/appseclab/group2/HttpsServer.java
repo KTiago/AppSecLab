@@ -129,11 +129,10 @@ public class HttpsServer extends NanoHTTPD {
         }
     }
 
-    private String pw = "";
+    private final String pw = System.getenv("shared_pw");
 
-    public HttpsServer(String hostname, int port, String pw) {
+    public HttpsServer(String hostname, int port) {
         super(hostname, port);
-        this.pw = pw;
     }
 
     private boolean verifyPass(String pass) {
@@ -320,11 +319,10 @@ public class HttpsServer extends NanoHTTPD {
     }
 
     public void makeHttps() throws KeyStoreException, CertificateException, NoSuchAlgorithmException, IOException, UnrecoverableKeyException {
-
         KeyStore ks = KeyStore.getInstance("JKS");
-        ks.load( new FileInputStream( "certs/root/rootstore.p12" ),    "wafwaf".toCharArray());
+        ks.load( new FileInputStream( System.getenv("rootCertStoreLocation")),    System.getenv("rootCertStore").toCharArray());
         KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-        keyManagerFactory.init(ks, "wafwaf".toCharArray());
+        keyManagerFactory.init(ks, System.getenv("rootCertStore").toCharArray());
 
         this.makeSecure(makeSSLSocketFactory(ks,keyManagerFactory),null);
     }

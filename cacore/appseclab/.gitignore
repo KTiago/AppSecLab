@@ -3,5 +3,6 @@ target/
 *.jar
 certs/*
 certsWithKeys
-activeCerts
-revokedCerts
+activeCert
+revokedCert
+runwithpass.sh
