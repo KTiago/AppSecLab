@@ -14,6 +14,7 @@ import org.junit.contrib.java.lang.system.EnvironmentVariables;
 
 import java.io.*;
 
+import java.lang.reflect.Field;
 import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
@@ -32,10 +33,15 @@ public class CertStructureTest {
             = new EnvironmentVariables();
 
     @Before
-    public void setUp() throws IOException {
+    public void setUp() throws IOException, IllegalAccessException, NoSuchFieldException {
+
+        Field instance = CertStructure.class.getDeclaredField("instance");
+        instance.setAccessible(true);
+        instance.set(null, null);
+
         environmentVariables.set("shared_pw", "wafwaf");
         environmentVariables.set("rootCertStore", "wafwaf");
-        environmentVariables.set("rootCertStoreLocation", "certs/root/rootstore.p12");//TODO: change that
+        environmentVariables.set("rootCertStoreLocation", "certs/test/intermediate.p12");
         environmentVariables.set("certsWithKeys", "wafwaf");
         environmentVariables.set("certsWithKeysFilename", "test_certsWithKeys");
         environmentVariables.set("revokedCertFilename", "test_revokedCert");
@@ -85,7 +91,7 @@ public class CertStructureTest {
     }
 
     @Test
-    public void getCert() throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+    public void createCertTest() throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
         String testEmail = "waf@wuf.com", testName = "Some Name", pw = System.getenv("shared_pw");
         Gson gson = new Gson();
         HttpsServer.JSONCertQuery q = new HttpsServer.JSONCertQuery(testEmail, testName, pw);
@@ -111,7 +117,7 @@ public class CertStructureTest {
         KeyStore rootStore = KeyStore.getInstance("PKCS12");
         rootStore.load(new FileInputStream(System.getenv("rootCertStoreLocation")), System.getenv("rootCertStore").toCharArray());
 
-        Certificate rootCert = rootStore.getCertificate("rootcert");
+        Certificate rootCert = rootStore.getCertificate("intermediate");
 
         try {
             leafCert.verify(rootCert.getPublicKey());
