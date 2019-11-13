@@ -291,7 +291,7 @@ public class CertStructure {
 
         BigInteger sn = getNewSerialNumber();
         X509v3CertificateBuilder v3CertBuilder = new JcaX509v3CertificateBuilder(
-                JcaX500NameUtil.getIssuer(caCert),
+                JcaX500NameUtil.getSubject(caCert),
                 sn,
                 Date.from(LocalDateTime.now().toInstant(ZoneOffset.UTC)),
                 Date.from(LocalDateTime.now().plusDays(VALIDITY).toInstant(ZoneOffset.UTC)),
