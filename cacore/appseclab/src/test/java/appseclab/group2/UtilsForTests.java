@@ -7,29 +7,6 @@ import java.security.*;
 import java.security.cert.CertificateException;
 
 public class UtilsForTests {
-
-    public static void setUp() throws IOException {
-        CACore.main(null);
-
-        //Delete all keystores
-        File activeCertsFile = new File("activeCerts");
-        if(activeCertsFile.exists()) {
-            activeCertsFile.delete();
-        }
-
-        File revokedCertsFile = new File("revokedCerts");
-        if(revokedCertsFile.exists()) {
-            revokedCertsFile.delete();
-        }
-
-        File certsWithKeysFile = new File("certsWithKeys");
-        if(certsWithKeysFile.exists()) {
-            certsWithKeysFile.delete();
-        }
-
-        //CertStructure.getInstance().initialize();
-    }
-
     public static String sendPayload(String url, String req, String method) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
 
         URL connect = new URL(url);

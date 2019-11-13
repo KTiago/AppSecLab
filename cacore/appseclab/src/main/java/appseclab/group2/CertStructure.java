@@ -29,10 +29,14 @@ import java.util.logging.Level;
 
 //Implemented as singleton
 public class CertStructure {
-    private final String ROOT_CA = "certs/root/rootstore.p12";
-    private final String ROOT_CA_PASSWORD = "wafwaf";
+    private final String ROOT_CA = System.getenv("rootCertStoreLocation");
+    private final String ROOT_CA_PASSWORD = System.getenv("rootCertStore");
     private final String ROOT_CA_ALIAS = "rootcert";
     private final String SIG_ALG = "SHA256WITHRSA";
+    private final String certsWithKeysFilename = System.getenv("certsWithKeysFilename");
+    private final String certsWithKeysPw = System.getenv("certsWithKeys");
+    private final String activeCertFilename = System.getenv("activeCertFilename");
+    private final String revokedCertFilename = System.getenv("revokedCertFilename");
 
     private final int KEY_SIZE = 2048;
     private final int VALIDITY = 365;
@@ -75,9 +79,9 @@ public class CertStructure {
         }
 
         //Check if keystores already exist or have to be created
-        File activeCertsFile = new File("activeCerts");
-        File revokedCertsFile = new File("revokedCerts");
-        File certsWithKeysFile = new File("certsWithKeys");
+        File activeCertsFile = new File(activeCertFilename);
+        File revokedCertsFile = new File(revokedCertFilename);
+        File certsWithKeysFile = new File(certsWithKeysFilename);
         try {
             if(activeCertsFile.exists()) {
                 activeCerts.load(new FileInputStream(activeCertsFile), "".toCharArray());
@@ -92,7 +96,7 @@ public class CertStructure {
             }
 
             if(certsWithKeysFile.exists()) {
-                certsWithKeys.load(new FileInputStream(certsWithKeysFile), "".toCharArray());
+                certsWithKeys.load(new FileInputStream(certsWithKeysFile), certsWithKeysPw.toCharArray());
             } else {
                 certsWithKeys.load(null, null);
             }
@@ -151,7 +155,7 @@ public class CertStructure {
     private void addActiveCert(X509Certificate crt) {
         try {
             activeCerts.setCertificateEntry(getEmailFromCert(crt), crt);
-            activeCerts.store(new FileOutputStream("activeCerts"), "".toCharArray());
+            activeCerts.store(new FileOutputStream(activeCertFilename), "".toCharArray());
         } catch (KeyStoreException e) {
             e.printStackTrace();
         } catch (CertificateException e) {
@@ -192,9 +196,9 @@ public class CertStructure {
             }
 
             revokedCerts.setCertificateEntry(serialNumber, activeCerts.getCertificate(email));
-            revokedCerts.store(new FileOutputStream("revokedCerts"), "".toCharArray());
+            revokedCerts.store(new FileOutputStream(revokedCertFilename), "".toCharArray());
             activeCerts.deleteEntry(email);
-            activeCerts.store(new FileOutputStream("activeCerts"), "".toCharArray());
+            activeCerts.store(new FileOutputStream(activeCertFilename), "".toCharArray());
             revokedCertNumber++;
             return true;
         } catch (KeyStoreException e) {
@@ -212,10 +216,9 @@ public class CertStructure {
     }
 
     private void addKeyCert(X509Certificate[] chain, PrivateKey key) {
-
         try {
             certsWithKeys.setKeyEntry(chain[0].getSerialNumber().toString(), key, "".toCharArray(),chain);
-            certsWithKeys.store(new FileOutputStream("certsWithKeys"), "".toCharArray());
+            certsWithKeys.store(new FileOutputStream(certsWithKeysFilename), certsWithKeysPw.toCharArray());
         } catch (KeyStoreException e) {
             e.printStackTrace();
         } catch (CertificateException e) {
@@ -289,7 +292,7 @@ public class CertStructure {
         return IETFUtils.valueToString(cn.getFirst().getValue());
     }
 
-    public byte[] createCert(String email, String name) {
+    public CertTuple createCert(String email, String name) {
         //KeyPair for newly created certificate
         KeyPair keyPair;
         KeyPairGenerator keyGen = null;
@@ -306,9 +309,10 @@ public class CertStructure {
         nameBuilder.addRDN(BCStyle.CN, email);
         nameBuilder.addRDN(BCStyle.OU, name);
 
+        BigInteger sn = getNewSerialNumber();
         X509v3CertificateBuilder v3CertBuilder = new JcaX509v3CertificateBuilder(
                 JcaX500NameUtil.getIssuer(caCert),
-                getNewSerialNumber(),
+                sn,
                 Date.from(LocalDateTime.now().toInstant(ZoneOffset.UTC)),
                 Date.from(LocalDateTime.now().plusDays(VALIDITY).toInstant(ZoneOffset.UTC)),
                 nameBuilder.build(),
@@ -358,7 +362,7 @@ public class CertStructure {
         try {
             File cert =  new File("certs/certGen");
             CALogger.getInstance().logger.log(Level.INFO, "Certificate created for '" + name + "' with email '" + email + "'");
-            return Files.readAllBytes(cert.toPath());
+            return new CertTuple(Files.readAllBytes(cert.toPath()), sn.toString());
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
