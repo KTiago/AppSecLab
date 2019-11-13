@@ -31,7 +31,7 @@ import java.util.logging.Level;
 public class CertStructure {
     private final String ROOT_CA = System.getenv("rootCertStoreLocation");
     private final String ROOT_CA_PASSWORD = System.getenv("rootCertStore");
-    private final String ROOT_CA_ALIAS = "rootcert";
+    private final String ROOT_CA_ALIAS = "intermediate";
     private final String SIG_ALG = "SHA256WITHRSA";
     private final String certsWithKeysFilename = System.getenv("certsWithKeysFilename");
     private final String certsWithKeysPw = System.getenv("certsWithKeys");
@@ -336,8 +336,9 @@ public class CertStructure {
             keystore = KeyStore.getInstance("PKCS12");
             keystore.load(null, null);
 
-            X509Certificate[] chain = new X509Certificate[1];
+            X509Certificate[] chain = new X509Certificate[2];
             chain[0] = newCert;
+            chain[1] = caCert;
 
             keystore.setKeyEntry(email, keyPair.getPrivate(), "".toCharArray(), chain);
             keystore.store(new FileOutputStream("certs/certGen"), "".toCharArray());
