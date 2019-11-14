@@ -5,36 +5,42 @@ import java.util.logging.*;
 
 public class CALogger {
 
-    public final static Logger logger = Logger.getLogger("CALogger");
+    private final static Logger logger = Logger.getLogger("CALogger");
 
     private static CALogger instance = null;
 
-    private CALogger() {
+    private CALogger() throws IOException {
         FileHandler fh;
         ConsoleHandler ch;
-        try {
-            fh = new FileHandler("cacore.log", true);
-            fh.setFormatter(new SimpleFormatter());
-            fh.setLevel(Level.ALL);
+        fh = new FileHandler("cacore.log", true);
+        fh.setFormatter(new SimpleFormatter());
+        fh.setLevel(Level.ALL);
 
-            ch = new ConsoleHandler();
-            ch.setFormatter(new SimpleFormatter());
-            ch.setLevel(Level.ALL);
+        ch = new ConsoleHandler();
+        ch.setFormatter(new SimpleFormatter());
+        ch.setLevel(Level.ALL);
 
-            logger.addHandler(fh);
-            logger.addHandler(ch);
-            logger.setUseParentHandlers(false);
-            logger.setLevel(Level.ALL);
-        } catch (IOException e) {
-            e.printStackTrace();
+        logger.addHandler(fh);
+        logger.addHandler(ch);
+        logger.setUseParentHandlers(false);
+        logger.setLevel(Level.ALL);
+    }
+
+    public static void initCALogger() throws IOException {
+        if (instance == null) {
+            instance = new CALogger();
         }
     }
 
     public static CALogger getInstance() {
-        if (instance == null) {
-            instance = new CALogger();
-        }
-
         return instance;
+    }
+
+    public void log(String message) {
+        logger.log(Level.INFO, message);
+    }
+
+    public void log(String message, Throwable e) {
+        logger.log(Level.SEVERE, message, e);
     }
 }

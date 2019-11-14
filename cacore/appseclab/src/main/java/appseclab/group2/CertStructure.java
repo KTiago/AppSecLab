@@ -25,7 +25,6 @@ import java.security.cert.X509Certificate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
-import java.util.logging.Level;
 
 //Implemented as singleton
 public class CertStructure {
@@ -56,100 +55,81 @@ public class CertStructure {
 
     private static CertStructure instance;
 
-    private CertStructure() {
+    private String initSerialNumber() throws KeyStoreException {
+        String sn = null;
+        Enumeration<String> emails = activeCerts.aliases();
+        List<BigInteger> serialNumbers = new ArrayList<>();
+        while (emails.hasMoreElements()) {
+            X509Certificate tmp = (X509Certificate) activeCerts.getCertificate(emails.nextElement());
+            serialNumbers.add(tmp.getSerialNumber());
+        }
+
+        Enumeration<String> serials = revokedCerts.aliases();
+        while (serials.hasMoreElements()) {
+            serialNumbers.add(new BigInteger(serials.nextElement()));
+        }
+
+        if (serialNumbers.isEmpty()) {
+            sn = "N/A";
+        } else {
+            Collections.sort(serialNumbers);
+            sn = serialNumbers.get(serialNumbers.size()-1).toString();
+        }
+        return sn;
+    }
+
+    private CertStructure() throws KeyStoreException, IOException, UnrecoverableKeyException, NoSuchAlgorithmException, CertificateException {
         //Get the root certificate ready along with its private key
         KeyStore rootStore = null;
-        try {
-            rootStore = KeyStore.getInstance("PKCS12");
-            rootStore.load(new FileInputStream(ROOT_CA), ROOT_CA_PASSWORD.toCharArray());
+        rootStore = KeyStore.getInstance("PKCS12");
+        rootStore.load(new FileInputStream(ROOT_CA), ROOT_CA_PASSWORD.toCharArray());
 
-            caPrivKey = (PrivateKey)rootStore.getKey(ROOT_CA_ALIAS, ROOT_CA_PASSWORD.toCharArray());
-            caCert = (X509Certificate) rootStore.getCertificate(ROOT_CA_ALIAS);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        caPrivKey = (PrivateKey)rootStore.getKey(ROOT_CA_ALIAS, ROOT_CA_PASSWORD.toCharArray());
+        caCert = (X509Certificate) rootStore.getCertificate(ROOT_CA_ALIAS);
 
         //Get the keyStore ready
-        try {
-            activeCerts = KeyStore.getInstance("PKCS12");
-            revokedCerts = KeyStore.getInstance("PKCS12");
-            certsWithKeys = KeyStore.getInstance("PKCS12");
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
-        }
+        activeCerts = KeyStore.getInstance("PKCS12");
+        revokedCerts = KeyStore.getInstance("PKCS12");
+        certsWithKeys = KeyStore.getInstance("PKCS12");
 
         //Check if keystores already exist or have to be created
         File activeCertsFile = new File(activeCertFilename);
         File revokedCertsFile = new File(revokedCertFilename);
         File certsWithKeysFile = new File(certsWithKeysFilename);
-        try {
-            if(activeCertsFile.exists()) {
-                activeCerts.load(new FileInputStream(activeCertsFile), "".toCharArray());
-            } else {
-                activeCerts.load(null, null);
-            }
 
-            if(revokedCertsFile.exists()) {
-                revokedCerts.load(new FileInputStream(revokedCertsFile), "".toCharArray());
-            } else {
-                revokedCerts.load(null, null);
-            }
-
-            if(certsWithKeysFile.exists()) {
-                certsWithKeys.load(new FileInputStream(certsWithKeysFile), certsWithKeysPw.toCharArray());
-            } else {
-                certsWithKeys.load(null, null);
-            }
-
-            //Init current infos
-            issuedCertNumber = activeCerts.size() + revokedCerts.size();
-            revokedCertNumber = revokedCerts.size();
-
-            currentSerialNumber = initSerialNumber();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (CertificateException e) {
-            e.printStackTrace();
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
+        if(activeCertsFile.exists()) {
+            activeCerts.load(new FileInputStream(activeCertsFile), "".toCharArray());
+        } else {
+            activeCerts.load(null, null);
         }
+
+        if(revokedCertsFile.exists()) {
+            revokedCerts.load(new FileInputStream(revokedCertsFile), "".toCharArray());
+        } else {
+            revokedCerts.load(null, null);
+        }
+
+        if(certsWithKeysFile.exists()) {
+            certsWithKeys.load(new FileInputStream(certsWithKeysFile), certsWithKeysPw.toCharArray());
+        } else {
+            certsWithKeys.load(null, null);
+        }
+
+        //Init current infos
+        issuedCertNumber = activeCerts.size() + revokedCerts.size();
+        revokedCertNumber = revokedCerts.size();
+
+        currentSerialNumber = initSerialNumber();
     }
 
-    private String initSerialNumber() {
-        String sn = null;
-        try {
-            Enumeration<String> emails = activeCerts.aliases();
-            List<BigInteger> serialNumbers = new ArrayList<>();
-            while (emails.hasMoreElements()) {
-                X509Certificate tmp = (X509Certificate) activeCerts.getCertificate(emails.nextElement());
-                serialNumbers.add(tmp.getSerialNumber());
-            }
-
-            Enumeration<String> serials = revokedCerts.aliases();
-            while (serials.hasMoreElements()) {
-                serialNumbers.add(new BigInteger(serials.nextElement()));
-            }
-
-            if (serialNumbers.isEmpty()) {
-                sn = "N/A";
-            } else {
-                Collections.sort(serialNumbers);
-                sn = serialNumbers.get(serialNumbers.size()-1).toString();
-            }
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
+    public static void initCertStructure() throws UnrecoverableKeyException, CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException {
+        if (instance == null) {
+            instance = new CertStructure();
         }
-        return sn;
     }
 
     public static CertStructure getInstance () {
-        if (CertStructure.instance == null) {
-            CertStructure.instance = new CertStructure();
-        }
-        return CertStructure.instance;
+        return instance;
     }
 
     private void addActiveCert(X509Certificate crt) {
@@ -311,7 +291,7 @@ public class CertStructure {
 
         BigInteger sn = getNewSerialNumber();
         X509v3CertificateBuilder v3CertBuilder = new JcaX509v3CertificateBuilder(
-                JcaX500NameUtil.getIssuer(caCert),
+                JcaX500NameUtil.getSubject(caCert),
                 sn,
                 Date.from(LocalDateTime.now().toInstant(ZoneOffset.UTC)),
                 Date.from(LocalDateTime.now().plusDays(VALIDITY).toInstant(ZoneOffset.UTC)),
@@ -362,7 +342,7 @@ public class CertStructure {
 
         try {
             File cert =  new File("certs/certGen");
-            CALogger.getInstance().logger.log(Level.INFO, "Certificate created for '" + name + "' with email '" + email + "'");
+            CALogger.getInstance().log("Certificate created for '" + name + "' with email '" + email + "'");
             return new CertTuple(Files.readAllBytes(cert.toPath()), sn.toString());
         } catch (FileNotFoundException e) {
             e.printStackTrace();
