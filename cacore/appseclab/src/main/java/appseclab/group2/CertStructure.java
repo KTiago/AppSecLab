@@ -29,12 +29,12 @@ import java.util.*;
 
 //Implemented as singleton
 public class CertStructure {
-    private final String ROOT_CA = System.getenv("rootCertStoreLocation");
-    private final String ROOT_CA_PASSWORD = System.getenv("rootCertStore");
-    private final String ROOT_CA_ALIAS = "intermediate";
+    private final String INTERMEDIATE_CA_LOCATION = System.getenv("intermediateCertStoreLocation");
+    private final String INTERMEDIATE_CA_PASSWORD = System.getenv("intermediateCertStorePw");
+    private final String INTERMEDIATE_CA_ALIAS = "intermediate";
     private final String SIG_ALG = "SHA256WITHRSA";
     private final String certsWithKeysFilename = System.getenv("certsWithKeysFilename");
-    private final String certsWithKeysPw = System.getenv("certsWithKeys");
+    private final String certsWithKeysPw = System.getenv("certsWithKeysPw");
     private final String activeCertFilename = System.getenv("activeCertFilename");
     private final String revokedCertFilename = System.getenv("revokedCertFilename");
 
@@ -79,14 +79,14 @@ public class CertStructure {
         return sn;
     }
 
-    private CertStructure() throws KeyStoreException, IOException, UnrecoverableKeyException, NoSuchAlgorithmException, CertificateException {
+    private CertStructure() throws KeyStoreException, IOException, UnrecoverableEntryException, NoSuchAlgorithmException, CertificateException {
         //Get the root certificate ready along with its private key
         KeyStore rootStore = null;
         rootStore = KeyStore.getInstance("PKCS12");
-        rootStore.load(new FileInputStream(ROOT_CA), ROOT_CA_PASSWORD.toCharArray());
+        rootStore.load(new FileInputStream(INTERMEDIATE_CA_LOCATION), INTERMEDIATE_CA_PASSWORD.toCharArray());
 
-        caPrivKey = (PrivateKey)rootStore.getKey(ROOT_CA_ALIAS, ROOT_CA_PASSWORD.toCharArray());
-        caCert = (X509Certificate) rootStore.getCertificate(ROOT_CA_ALIAS);
+        caPrivKey = (PrivateKey)rootStore.getKey(INTERMEDIATE_CA_ALIAS, INTERMEDIATE_CA_PASSWORD.toCharArray());
+        caCert = (X509Certificate) rootStore.getCertificate(INTERMEDIATE_CA_ALIAS);
 
         //Get the keyStore ready
         activeCerts = KeyStore.getInstance("PKCS12");
@@ -123,7 +123,7 @@ public class CertStructure {
         currentSerialNumber = initSerialNumber();
     }
 
-    public static void initCertStructure() throws UnrecoverableKeyException, CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException {
+    public static void initCertStructure() throws UnrecoverableEntryException, CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException {
         if (instance == null) {
             instance = new CertStructure();
         }

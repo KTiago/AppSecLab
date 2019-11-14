@@ -126,7 +126,7 @@ public class HttpsServer extends NanoHTTPD {
         }
     }
 
-    private final String pw = System.getenv("shared_pw");
+    private final String pw = System.getenv("sharedPw");
 
     public HttpsServer(String hostname, int port) {
         super(hostname, port);
