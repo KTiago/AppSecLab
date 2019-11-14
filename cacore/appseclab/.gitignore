@@ -2,6 +2,7 @@
 target/
 *.jar
 certs/root/
+certs/tls/
 certs/certGen
 certsWithKeys
 activeCert

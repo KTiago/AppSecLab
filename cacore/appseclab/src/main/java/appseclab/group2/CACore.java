@@ -9,7 +9,7 @@ import java.security.cert.CertificateException;
 public class CACore {
 
     static final int PORT_NUMBER = 8080;
-    static HttpsServer srvr = new HttpsServer("", PORT_NUMBER);
+    static HttpsServer srvr = new HttpsServer(System.getenv("hostname"), PORT_NUMBER);
 
     public static void main(String[] args) {
 

@@ -46,6 +46,8 @@ public class CertStructureTest {
         environmentVariables.set("certsWithKeysFilename", "test_certsWithKeys");
         environmentVariables.set("revokedCertFilename", "test_revokedCert");
         environmentVariables.set("activeCertFilename", "test_activeCert");
+        environmentVariables.set("tlsPw", "wafwaf");
+        environmentVariables.set("hostname", "");
 
         //Delete all tests keyStores
         File activeCertsFile = new File(System.getenv("activeCertFilename"));
