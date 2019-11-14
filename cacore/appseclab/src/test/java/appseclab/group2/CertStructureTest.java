@@ -48,6 +48,7 @@ public class CertStructureTest {
         environmentVariables.set("activeCertFilename", "test_activeCert");
         environmentVariables.set("tlsPw", "wafwaf");
         environmentVariables.set("hostname", "");
+        environmentVariables.set("port", "8080");
 
         //Delete all tests keyStores
         File activeCertsFile = new File(System.getenv("activeCertFilename"));
