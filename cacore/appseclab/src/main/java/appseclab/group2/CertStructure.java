@@ -23,6 +23,7 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.*;
 
@@ -289,12 +290,14 @@ public class CertStructure {
         nameBuilder.addRDN(BCStyle.CN, email);
         nameBuilder.addRDN(BCStyle.OU, name);
 
+        ZoneOffset zoneOffSet = ZoneId.of("Europe/Zurich").getRules().getOffset(LocalDateTime.now());
+
         BigInteger sn = getNewSerialNumber();
         X509v3CertificateBuilder v3CertBuilder = new JcaX509v3CertificateBuilder(
                 JcaX500NameUtil.getSubject(caCert),
                 sn,
-                Date.from(LocalDateTime.now().toInstant(ZoneOffset.UTC)),
-                Date.from(LocalDateTime.now().plusDays(VALIDITY).toInstant(ZoneOffset.UTC)),
+                Date.from(LocalDateTime.now().toInstant(zoneOffSet)),
+                Date.from(LocalDateTime.now().plusDays(VALIDITY).toInstant(zoneOffSet)),
                 nameBuilder.build(),
                 keyPair.getPublic()
         );
