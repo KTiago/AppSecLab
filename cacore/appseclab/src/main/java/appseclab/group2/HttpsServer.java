@@ -313,9 +313,9 @@ public class HttpsServer extends NanoHTTPD {
 
     public void makeHttps() throws KeyStoreException, CertificateException, NoSuchAlgorithmException, IOException, UnrecoverableKeyException {
         KeyStore ks = KeyStore.getInstance("JKS");
-        ks.load( new FileInputStream( System.getenv("rootCertStoreLocation")), System.getenv("rootCertStore").toCharArray());
+        ks.load( new FileInputStream("certs/tls/tls.p12"), System.getenv("tlsPw").toCharArray());
         KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-        keyManagerFactory.init(ks, System.getenv("rootCertStore").toCharArray());
+        keyManagerFactory.init(ks, System.getenv("tlsPw").toCharArray());
 
         this.makeSecure(makeSSLSocketFactory(ks,keyManagerFactory),null);
     }
