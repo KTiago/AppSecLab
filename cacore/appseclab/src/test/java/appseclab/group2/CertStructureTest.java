@@ -14,6 +14,7 @@ import org.junit.contrib.java.lang.system.EnvironmentVariables;
 
 import java.io.*;
 
+import java.lang.reflect.Field;
 import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
@@ -32,14 +33,22 @@ public class CertStructureTest {
             = new EnvironmentVariables();
 
     @Before
-    public void setUp() throws IOException {
-        environmentVariables.set("shared_pw", "wafwaf");
-        environmentVariables.set("rootCertStore", "wafwaf");
-        environmentVariables.set("rootCertStoreLocation", "certs/root/rootstore.p12");//TODO: change that
-        environmentVariables.set("certsWithKeys", "wafwaf");
+    public void setUp() throws IOException, IllegalAccessException, NoSuchFieldException {
+
+        Field instance = CertStructure.class.getDeclaredField("instance");
+        instance.setAccessible(true);
+        instance.set(null, null);
+
+        environmentVariables.set("sharedPw", "wafwaf");
+        environmentVariables.set("intermediateCertStorePw", "wafwaf");
+        environmentVariables.set("intermediateCertStoreLocation", "certs/test/intermediate.p12");
+        environmentVariables.set("certsWithKeysPw", "wafwaf");
         environmentVariables.set("certsWithKeysFilename", "test_certsWithKeys");
         environmentVariables.set("revokedCertFilename", "test_revokedCert");
         environmentVariables.set("activeCertFilename", "test_activeCert");
+        environmentVariables.set("tlsPw", "wafwaf");
+        environmentVariables.set("hostname", "");
+        environmentVariables.set("port", "8080");
 
         //Delete all tests keyStores
         File activeCertsFile = new File(System.getenv("activeCertFilename"));
@@ -85,8 +94,8 @@ public class CertStructureTest {
     }
 
     @Test
-    public void getCert() throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
-        String testEmail = "waf@wuf.com", testName = "Some Name", pw = System.getenv("shared_pw");
+    public void createCertTest() throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+        String testEmail = "waf@wuf.com", testName = "Some Name", pw = System.getenv("sharedPw");
         Gson gson = new Gson();
         HttpsServer.JSONCertQuery q = new HttpsServer.JSONCertQuery(testEmail, testName, pw);
         String req = gson.toJson(q, HttpsServer.JSONCertQuery.class);
@@ -109,9 +118,9 @@ public class CertStructureTest {
 
         //To verify if the signing was done with the root key, we have to load it
         KeyStore rootStore = KeyStore.getInstance("PKCS12");
-        rootStore.load(new FileInputStream(System.getenv("rootCertStoreLocation")), System.getenv("rootCertStore").toCharArray());
+        rootStore.load(new FileInputStream(System.getenv("intermediateCertStoreLocation")), System.getenv("intermediateCertStorePw").toCharArray());
 
-        Certificate rootCert = rootStore.getCertificate("rootcert");
+        Certificate rootCert = rootStore.getCertificate("intermediate");
 
         try {
             leafCert.verify(rootCert.getPublicKey());
@@ -123,7 +132,7 @@ public class CertStructureTest {
     @Test
     public void setActiveCertTest() throws CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, IOException {
 
-        String testEmail = "waf@wuf.com", testName = "Some Name", pw = System.getenv("shared_pw");
+        String testEmail = "waf@wuf.com", testName = "Some Name", pw = System.getenv("sharedPw");
         Gson gson = new Gson();
         HttpsServer.JSONCertQuery q = new HttpsServer.JSONCertQuery(testEmail, testName, pw);
         String req = gson.toJson(q, HttpsServer.JSONCertQuery.class);
@@ -135,7 +144,7 @@ public class CertStructureTest {
 
     @Test
     public void setRevokedCertsTest() throws CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, IOException {
-        String testEmail = "some@randomness.com", testName = "Cheers Mate", pw = System.getenv("shared_pw");
+        String testEmail = "some@randomness.com", testName = "Cheers Mate", pw = System.getenv("sharedPw");
 
         Gson gson = new Gson();
         HttpsServer.JSONCertQuery certQuery = new HttpsServer.JSONCertQuery(testEmail, testName, pw);
@@ -165,7 +174,7 @@ public class CertStructureTest {
     @Test
     public void setKeyCertTest() throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
 
-        String testEmail = "waffel@wuffel.com", testName = "Cheers Mate", pw = System.getenv("shared_pw");
+        String testEmail = "waffel@wuffel.com", testName = "Cheers Mate", pw = System.getenv("sharedPw");
         Gson gson = new Gson();
         HttpsServer.JSONCertQuery q = new HttpsServer.JSONCertQuery(testEmail, testName, pw);
         String req = gson.toJson(q, HttpsServer.JSONCertQuery.class);
@@ -180,7 +189,7 @@ public class CertStructureTest {
 
         KeyStore certsWithKeys = KeyStore.getInstance("PKCS12");
         File certsWithKeysFile = new File(System.getenv("certsWithKeysFilename"));
-        certsWithKeys.load(new FileInputStream(certsWithKeysFile), System.getenv("certsWithKeys").toCharArray());
+        certsWithKeys.load(new FileInputStream(certsWithKeysFile), System.getenv("certsWithKeysPw").toCharArray());
         assertTrue(certsWithKeys.containsAlias(certSN));
     }
 

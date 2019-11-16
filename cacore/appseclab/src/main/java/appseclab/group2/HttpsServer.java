@@ -14,9 +14,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-
-
 
 public class HttpsServer extends NanoHTTPD {
 
@@ -129,7 +126,7 @@ public class HttpsServer extends NanoHTTPD {
         }
     }
 
-    private final String pw = System.getenv("shared_pw");
+    private final String pw = System.getenv("sharedPw");
 
     public HttpsServer(String hostname, int port) {
         super(hostname, port);
@@ -147,10 +144,10 @@ public class HttpsServer extends NanoHTTPD {
         //Define endpoints
         switch (path) {
             case "/getCert": {
-                CALogger.getInstance().logger.log(Level.INFO, "getCert request received");
+                CALogger.getInstance().log("getCert request received");
                 if (!Method.POST.equals(session.getMethod())) {
                     JSONAnswer ans = new JSONAnswer(Status.INVALID, "POST Request needed for /getCert");
-                    CALogger.getInstance().logger.log(Level.INFO, "getCert request was not POST");
+                    CALogger.getInstance().log("getCert request was not POST");
                     return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
                 }
 
@@ -163,9 +160,8 @@ public class HttpsServer extends NanoHTTPD {
                 try {
                     session.parseBody(body);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    CALogger.getInstance().log("exception during parsing the body of getCert request", e);
                     JSONAnswer ans = new JSONAnswer(Status.INVALID, "error parsing body of /getCert request");
-                    CALogger.getInstance().logger.log(Level.INFO, "getCert error parsing body");
                     return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
                 }
 
@@ -174,16 +170,16 @@ public class HttpsServer extends NanoHTTPD {
                 String email = q.email;
                 String name = q.name;
 
-                CALogger.getInstance().logger.log(Level.INFO, "getCert parameters are email='" + email + "' name='" + name + "'");
+                CALogger.getInstance().log("getCert parameters are email='" + email + "' name='" + name + "'");
 
                 if (!verifyPass(q.pw)) {
                     JSONAnswer ans = new JSONAnswer(Status.INVALID, "Invalid identification");
-                    CALogger.getInstance().logger.log(Level.INFO, "wrong token in the request");
+                    CALogger.getInstance().log("wrong token in the request");
                     return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
                 }
 
                 if (CertStructure.getInstance().isCertificateActive(email)) {
-                    CALogger.getInstance().logger.log(Level.INFO, "Certificate already active for '" + email + "'");
+                    CALogger.getInstance().log("Certificate already active for '" + email + "'");
                     JSONAnswer ans = new JSONAnswer(Status.INVALID, "Certificate already active for that email");
                     return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
                 }
@@ -193,14 +189,14 @@ public class HttpsServer extends NanoHTTPD {
                 String sn = certTup.getSn();
                 String encodedCert = java.util.Base64.getEncoder().withoutPadding().encodeToString(cert);
                 JSONCertAnswer ans = new JSONCertAnswer(Status.VALID, encodedCert, sn);
-                CALogger.getInstance().logger.log(Level.INFO, "New certificate for '" + email + "' sent");
+                CALogger.getInstance().log("New certificate for '" + email + "' sent");
                 return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
             }
             case "/revokeCert": {
-                CALogger.getInstance().logger.log(Level.INFO, "revokeCert request received");
+                CALogger.getInstance().log("revokeCert request received");
                 if (!Method.POST.equals(session.getMethod())) {
                     JSONAnswer ans = new JSONAnswer(Status.INVALID, "POST Request needed for /revokeCert");
-                    CALogger.getInstance().logger.log(Level.INFO, "revokeCert request was not POST");
+                    CALogger.getInstance().log("revokeCert request was not POST");
                     return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
                 }
 
@@ -208,9 +204,8 @@ public class HttpsServer extends NanoHTTPD {
                 try {
                     session.parseBody(body);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    CALogger.getInstance().log("exception during parsing the body of revokeCert request", e);
                     JSONAnswer ans = new JSONAnswer(Status.INVALID, "error parsing body of /revokeCert request");
-                    CALogger.getInstance().logger.log(Level.INFO, "revokeCert error parsing body");
                     return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
                 }
 
@@ -218,29 +213,29 @@ public class HttpsServer extends NanoHTTPD {
                 JSONRevokeQuery q = gson.fromJson(body.get("postData"), JSONRevokeQuery.class);
                 String serialNumber = q.serialNumber;
 
-                CALogger.getInstance().logger.log(Level.INFO, "revokeCert parameter is serialNumber='" + serialNumber + "'");
+                CALogger.getInstance().log("revokeCert parameter is serialNumber='" + serialNumber + "'");
 
                 if (!verifyPass(q.pw)) {
                     JSONAnswer ans = new JSONAnswer(Status.INVALID, "Invalid identification");
-                    CALogger.getInstance().logger.log(Level.INFO, "wrong token in the request");
+                    CALogger.getInstance().log("wrong token in the request");
                     return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
                 }
 
                 if (CertStructure.getInstance().addRevokedCert(serialNumber)) {
-                    JSONAnswer ans = new JSONAnswer(Status.VALID, "");
-                    CALogger.getInstance().logger.log(Level.INFO, "Certificate with serial number '" + serialNumber + "' as been revoked");
+                    JSONAnswer ans = new JSONAnswer(Status.VALID, "Certificate successfully revoked");
+                    CALogger.getInstance().log("Certificate with serial number '" + serialNumber + "' as been revoked");
                     return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
                 } else {
                     JSONAnswer ans = new JSONAnswer(Status.INVALID, "Could not revoke certificate");
-                    CALogger.getInstance().logger.log(Level.INFO, "Certificate can't be revoked");
+                    CALogger.getInstance().log("Certificate can't be revoked");
                     return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
                 }
             }
             case "/revokeList": {
-                CALogger.getInstance().logger.log(Level.INFO, "revokeList request received");
+                CALogger.getInstance().log("revokeList request received");
                 if (!Method.POST.equals(session.getMethod())) {
                     JSONAnswer ans = new JSONAnswer(Status.INVALID, "POST Request needed for /revokeCert");
-                    CALogger.getInstance().logger.log(Level.INFO, "revokeList request was not POST");
+                    CALogger.getInstance().log("revokeList request was not POST");
                     return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
                 }
 
@@ -248,9 +243,8 @@ public class HttpsServer extends NanoHTTPD {
                 try {
                     session.parseBody(body);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    CALogger.getInstance().log("exception during parsing the body of revokeList request", e);
                     JSONAnswer ans = new JSONAnswer(Status.INVALID, "error parsing body of /revokeList request");
-                    CALogger.getInstance().logger.log(Level.INFO, "revokeList error parsing body");
                     return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
                 }
 
@@ -258,19 +252,19 @@ public class HttpsServer extends NanoHTTPD {
 
                 if (!verifyPass(q.pw)) {
                     JSONAnswer ans = new JSONAnswer(Status.INVALID, "Invalid identification");
-                    CALogger.getInstance().logger.log(Level.INFO, "wrong token in the request");
+                    CALogger.getInstance().log("wrong token in the request");
                     return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
                 }
 
                 JSONCertListAnswer revokedCert = new JSONCertListAnswer(Status.VALID, CertStructure.getInstance().getRevokedList());
-                CALogger.getInstance().logger.log(Level.INFO, "revokeList sent");
+                CALogger.getInstance().log("revokeList sent");
                 return newFixedLengthResponse(Response.Status.OK, "application/json", revokedCert.getJson());
             }
             case "/getAdminInfos": {
-                CALogger.getInstance().logger.log(Level.INFO, "getAdminInfos request received");
+                CALogger.getInstance().log("getAdminInfos request received");
                 if (!Method.POST.equals(session.getMethod())) {
                     JSONAnswer ans = new JSONAnswer(Status.INVALID, "POST Request needed for /getAdminInfos");
-                    CALogger.getInstance().logger.log(Level.INFO, "getAdminInfos request was not POST");
+                    CALogger.getInstance().log("getAdminInfos request was not POST");
                     return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
                 }
 
@@ -278,9 +272,8 @@ public class HttpsServer extends NanoHTTPD {
                 try {
                     session.parseBody(body);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    CALogger.getInstance().log("exception during parsing the body of getAdminInfos request", e);
                     JSONAnswer ans = new JSONAnswer(Status.INVALID, "error parsing body of /getAdminInfos request");
-                    CALogger.getInstance().logger.log(Level.INFO, "getAdminInfos error parsing body");
                     return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
                 }
 
@@ -289,7 +282,7 @@ public class HttpsServer extends NanoHTTPD {
 
                 if (!verifyPass(q.pw)) {
                     JSONAnswer ans = new JSONAnswer(Status.INVALID, "Invalid identification");
-                    CALogger.getInstance().logger.log(Level.INFO, "wrong token in the request");
+                    CALogger.getInstance().log("wrong token in the request");
                     return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
                 }
 
@@ -297,12 +290,12 @@ public class HttpsServer extends NanoHTTPD {
                 String revokedCert = Integer.toString(CertStructure.getInstance().getRevokedCertNumber());
                 String sn = CertStructure.getInstance().getSerialNumber();
                 JSONAdminInfos adminInfos = new JSONAdminInfos(Status.VALID, issuedCert, revokedCert, sn);
-                CALogger.getInstance().logger.log(Level.INFO, "admin infos sent");
+                CALogger.getInstance().log("admin infos sent");
                 return newFixedLengthResponse(Response.Status.OK, "json/application", adminInfos.getJson());
             }
             default:
                 JSONAnswer ans = new JSONAnswer(Status.INVALID, "Request not properly formed");
-                CALogger.getInstance().logger.log(Level.INFO, "Invalid request received");
+                CALogger.getInstance().log("Invalid request received");
                 return newFixedLengthResponse(Response.Status.OK, "json/application", ans.getJson());
         }
     }
@@ -312,17 +305,17 @@ public class HttpsServer extends NanoHTTPD {
         try {
             this.makeHttps();
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new IOException(e);
         }
         super.start();
-        CALogger.getInstance().logger.log(Level.INFO, "HTTPS Server started");
+        CALogger.getInstance().log("HTTPS Server started");
     }
 
     public void makeHttps() throws KeyStoreException, CertificateException, NoSuchAlgorithmException, IOException, UnrecoverableKeyException {
         KeyStore ks = KeyStore.getInstance("JKS");
-        ks.load( new FileInputStream( System.getenv("rootCertStoreLocation")),    System.getenv("rootCertStore").toCharArray());
+        ks.load( new FileInputStream("certs/tls/tls.p12"), System.getenv("tlsPw").toCharArray());
         KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-        keyManagerFactory.init(ks, System.getenv("rootCertStore").toCharArray());
+        keyManagerFactory.init(ks, System.getenv("tlsPw").toCharArray());
 
         this.makeSecure(makeSSLSocketFactory(ks,keyManagerFactory),null);
     }

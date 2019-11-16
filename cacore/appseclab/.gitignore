@@ -1,7 +1,9 @@
 .idea
 target/
 *.jar
-certs/*
+certs/root/
+certs/tls/
+certs/certGen
 certsWithKeys
 activeCert
 revokedCert
