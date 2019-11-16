@@ -5,12 +5,10 @@ import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.X500NameBuilder;
 import org.bouncycastle.asn1.x500.style.BCStyle;
 import org.bouncycastle.asn1.x500.style.IETFUtils;
-import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
+import org.bouncycastle.asn1.x509.*;
 import org.bouncycastle.asn1.x509.CRLReason;
-import org.bouncycastle.cert.X509CRLHolder;
-import org.bouncycastle.cert.X509CertificateHolder;
-import org.bouncycastle.cert.X509v2CRLBuilder;
-import org.bouncycastle.cert.X509v3CertificateBuilder;
+import org.bouncycastle.asn1.x509.Extension;
+import org.bouncycastle.cert.*;
 import org.bouncycastle.cert.jcajce.*;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.ContentSigner;
@@ -328,6 +326,14 @@ public class CertStructure {
                 nameBuilder.build(),
                 keyPair.getPublic()
         );
+
+        try {
+            v3CertBuilder.addExtension(Extension.basicConstraints, false, new BasicConstraints(false));
+            v3CertBuilder.addExtension(Extension.keyUsage, true, new KeyUsage(KeyUsage.nonRepudiation | KeyUsage.digitalSignature | KeyUsage.keyEncipherment));
+            v3CertBuilder.addExtension(Extension.extendedKeyUsage, false, new ExtendedKeyUsage(new KeyPurposeId[]{KeyPurposeId.id_kp_clientAuth, KeyPurposeId.id_kp_emailProtection}));
+        } catch (CertIOException e) {
+            e.printStackTrace();
+        }
 
         Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
         X509CertificateHolder certHolder = null;
