@@ -35,6 +35,7 @@ public class CertStructure {
     private final String certsWithKeysPw = System.getenv("certsWithKeysPw");
     private final String activeCertFilename = System.getenv("activeCertFilename");
     private final String revokedCertFilename = System.getenv("revokedCertFilename");
+    private final String crlFilename = System.getenv("crlFilename");
 
     private final int KEY_SIZE = 2048;
     private final int VALIDITY = 365;
@@ -47,6 +48,7 @@ public class CertStructure {
 
     //This will be regularly backed up
     private KeyStore certsWithKeys;
+    private X509CRLHolder crlHolder;
 
     private String currentSerialNumber = null;
     private int revokedCertNumber = 0;
@@ -77,7 +79,9 @@ public class CertStructure {
         return sn;
     }
 
-    private CertStructure() throws KeyStoreException, IOException, UnrecoverableEntryException, NoSuchAlgorithmException, CertificateException {
+    private CertStructure() throws KeyStoreException, IOException, UnrecoverableEntryException, NoSuchAlgorithmException, CertificateException, OperatorCreationException {
+        Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
+
         //Get the root certificate ready along with its private key
         KeyStore rootStore = null;
         rootStore = KeyStore.getInstance("PKCS12");
@@ -114,6 +118,25 @@ public class CertStructure {
             certsWithKeys.load(null, null);
         }
 
+        //CRL
+        File crlFile = new File(crlFilename);
+        if(crlFile.exists()) {
+            crlHolder = new X509CRLHolder(new FileInputStream(crlFile));
+        } else {
+            ZoneOffset zoneOffSet = ZoneId.of("Europe/Zurich").getRules().getOffset(LocalDateTime.now());
+            Date now = Date.from(LocalDateTime.now().toInstant(zoneOffSet));
+            X509v2CRLBuilder crlBuilder = new X509v2CRLBuilder(JcaX500NameUtil.getSubject(caCert), now);
+
+            JcaContentSignerBuilder signerBuilder = new JcaContentSignerBuilder(SIG_ALG);
+            signerBuilder.setProvider(BouncyCastleProvider.PROVIDER_NAME);
+            ContentSigner signer = signerBuilder.build(caPrivKey);
+            crlHolder = crlBuilder.build(signer);
+            crlHolder.getEncoded();
+            OutputStream outStream = new FileOutputStream(crlFilename);
+            outStream.write(crlHolder.getEncoded());
+            outStream.close();
+        }
+
         //Init current infos
         issuedCertNumber = activeCerts.size() + revokedCerts.size();
         revokedCertNumber = revokedCerts.size();
@@ -121,34 +144,36 @@ public class CertStructure {
         currentSerialNumber = initSerialNumber();
     }
 
-    public byte[] getCRL() {
+    private void updateCRL(BigInteger sn) {
         ZoneOffset zoneOffSet = ZoneId.of("Europe/Zurich").getRules().getOffset(LocalDateTime.now());
-        Date date = Date.from(LocalDateTime.now().toInstant(zoneOffSet));
-        X509v2CRLBuilder crlBuilder = new X509v2CRLBuilder(JcaX500NameUtil.getIssuer(caCert), date);
-        Enumeration<String> serials = null;
+        Date now = Date.from(LocalDateTime.now().toInstant(zoneOffSet));
+
+        X509v2CRLBuilder crlBuilder = new X509v2CRLBuilder(crlHolder);
+        crlBuilder.addCRLEntry(sn, now, CRLReason.unspecified);
+        JcaContentSignerBuilder signerBuilder = new JcaContentSignerBuilder(SIG_ALG);
+        signerBuilder.setProvider(BouncyCastleProvider.PROVIDER_NAME);
+        ContentSigner signer = null;
         try {
-            serials = revokedCerts.aliases();
-            while(serials.hasMoreElements()) {
-                crlBuilder.addCRLEntry(new BigInteger(serials.nextElement()), date, CRLReason.unspecified);
-            }
-            JcaContentSignerBuilder signerBuilder = new JcaContentSignerBuilder(SIG_ALG);
-            signerBuilder.setProvider(BouncyCastleProvider.PROVIDER_NAME);
-            ContentSigner signer = signerBuilder.build(caPrivKey);
-            X509CRLHolder crlHolder = crlBuilder.build(signer);
-
-            JcaX509CRLConverter converter = new JcaX509CRLConverter();
-
-            converter.setProvider(BouncyCastleProvider.PROVIDER_NAME);
-
-            return converter.getCRL(crlHolder).getEncoded();
-        } catch (KeyStoreException | OperatorCreationException | CRLException e) {
+            signer = signerBuilder.build(caPrivKey);
+            crlHolder = crlBuilder.build(signer);
+            OutputStream outStream = new FileOutputStream(crlFilename);
+            outStream.write(crlHolder.getEncoded());
+            outStream.close();
+        } catch (OperatorCreationException | IOException e) {
             e.printStackTrace();
         }
-
-        return null;
     }
 
-    public static void initCertStructure() throws UnrecoverableEntryException, CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException {
+    public byte[] getCRL() {
+        try {
+            return crlHolder.getEncoded();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public static void initCertStructure() throws UnrecoverableEntryException, CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException, OperatorCreationException {
         if (instance == null) {
             instance = new CertStructure();
         }
@@ -206,6 +231,7 @@ public class CertStructure {
             activeCerts.deleteEntry(email);
             activeCerts.store(new FileOutputStream(activeCertFilename), "".toCharArray());
             revokedCertNumber++;
+            updateCRL(new BigInteger(serialNumber));
             return true;
         } catch (KeyStoreException e) {
             e.printStackTrace();
@@ -335,7 +361,6 @@ public class CertStructure {
             e.printStackTrace();
         }
 
-        Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
         X509CertificateHolder certHolder = null;
         X509Certificate newCert = null;
         try {
