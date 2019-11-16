@@ -64,35 +64,6 @@ class CertificateManager
         return $response->toArray();
     }
 
-    public static function getRevokationList(): array
-    {
-        $data = ["pw" => self::getCaSharedSecret()];
-        $payload = json_encode($data);
-
-        $url = self::CA_CORE_URL . self::GET_REVOKED_LIST_ENDPOINT;
-        $cert = dirname(__DIR__) . self::CERT_NAME;
-
-        $client = HttpClient::create();
-        $response = $client->request(
-            'POST',
-            $url,
-            [
-                'headers' => [
-                    "Content-Type" => "application/json",
-                    "Content-Length" => strlen($payload)
-                ],
-                'body' => $payload,
-                'verify_peer' => 0,
-                'verify_host' => FALSE,
-                'cafile' => $cert,
-            ]
-        );
-
-        self::checkValidity($response->toArray());
-
-        return $response->toArray()["serials"];
-    }
-
     public static function revokeCertificate(int $sn)
     {
         $data = [

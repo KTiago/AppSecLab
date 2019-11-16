@@ -2,9 +2,8 @@
 
 namespace App\Controller;
 
-use App\CertificateManager;
-use http\Env\Response;
-use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 
@@ -22,9 +21,15 @@ class HomeController extends AbstractController
      * @Route("/revokedList", name="revoked_list")
      */
     public function getRevokedList() {
-        $list = CertificateManager::getRevokationList();
+        $path = dirname(__DIR__) . "/../rev/";
+        $filename = "revocation.crl";
+        $pathfile = $path . $filename;
 
-        return new JsonResponse($list);
+        // Make it downloadable for the user
+        $response = new BinaryFileResponse($pathfile);
+        $response->setContentDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, $filename);
+
+        return $response;
     }
 
     /**

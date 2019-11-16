@@ -21,6 +21,8 @@ class UserController extends AbstractController implements CertificateAuthentica
      */
     public function index()
     {
+        $this->denyAccessUnlessGranted('ROLE_USER', null, 'You must be logged in o access this page!');
+
         return $this->render('user/user_home.html.twig');
     }
 
@@ -31,6 +33,8 @@ class UserController extends AbstractController implements CertificateAuthentica
      */
     public function update(Request $request)
     {
+        $this->denyAccessUnlessGranted('ROLE_USER', null, 'You must be logged in o access this page!');
+
         /** @var User $user */
         $user = $this->getUser();
         $form = $this->createForm(
@@ -84,7 +88,7 @@ class UserController extends AbstractController implements CertificateAuthentica
         ]);
     }
 
-    public function downloadCert(string $certificate, string $username)
+    private function downloadCert(string $certificate, string $username)
     {
         // Write the cert
         $path = dirname(__DIR__) . "/.." . FileWriter::TMP_DIRECTORY . "/";
@@ -106,6 +110,8 @@ class UserController extends AbstractController implements CertificateAuthentica
      */
     public function revokeCert()
     {
+        $this->denyAccessUnlessGranted('ROLE_USER', null, 'You must be logged in o access this page!');
+
         /** @var User $user */
         $user = $this->getUser();
 
@@ -121,6 +127,8 @@ class UserController extends AbstractController implements CertificateAuthentica
      */
     public function revokeCertWithSn(int $sn)
     {
+        $this->denyAccessUnlessGranted('ROLE_USER', null, 'You must be logged in o access this page!');
+
         /** @var User $user */
         $user = $this->getUser();
 
@@ -133,8 +141,13 @@ class UserController extends AbstractController implements CertificateAuthentica
 
             $crl = $response['crl'];
             $fw = new FileWriter();
-            $path = dirname(__DIR__) . "/..rev/revocation.crl";
+            $dir = dirname(__DIR__) . "/../rev";
+            $path = $dir . "/revocation.crl";
             $fw->write($path, $crl);
+
+            // Create the symlink for Apache2
+            shell_exec("rm " . $dir . "/*.r0");
+            shell_exec("cd " . $dir . " && ln -s " . $path . " `openssl crl -hash -noout -in " . $path . "`.r0");
 
             // Save the user in the DB
             $entityManager = $this->getDoctrine()->getManager();
