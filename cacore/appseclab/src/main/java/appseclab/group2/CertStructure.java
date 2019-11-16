@@ -5,13 +5,15 @@ import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.X500NameBuilder;
 import org.bouncycastle.asn1.x500.style.BCStyle;
 import org.bouncycastle.asn1.x500.style.IETFUtils;
+import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
+import org.bouncycastle.asn1.x509.CRLReason;
+import org.bouncycastle.cert.X509CRLHolder;
 import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.cert.X509v2CRLBuilder;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
-import org.bouncycastle.cert.jcajce.JcaX500NameUtil;
-import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
-import org.bouncycastle.cert.jcajce.JcaX509CertificateHolder;
-import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
+import org.bouncycastle.cert.jcajce.*;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
@@ -19,9 +21,7 @@ import java.io.*;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.security.*;
-import java.security.cert.CertificateEncodingException;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
+import java.security.cert.*;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -121,6 +121,33 @@ public class CertStructure {
         revokedCertNumber = revokedCerts.size();
 
         currentSerialNumber = initSerialNumber();
+    }
+
+    public byte[] getCRL() {
+        ZoneOffset zoneOffSet = ZoneId.of("Europe/Zurich").getRules().getOffset(LocalDateTime.now());
+        Date date = Date.from(LocalDateTime.now().toInstant(zoneOffSet));
+        X509v2CRLBuilder crlBuilder = new X509v2CRLBuilder(JcaX500NameUtil.getIssuer(caCert), date);
+        Enumeration<String> serials = null;
+        try {
+            serials = revokedCerts.aliases();
+            while(serials.hasMoreElements()) {
+                crlBuilder.addCRLEntry(new BigInteger(serials.nextElement()), date, CRLReason.unspecified);
+            }
+            JcaContentSignerBuilder signerBuilder = new JcaContentSignerBuilder(SIG_ALG);
+            signerBuilder.setProvider(BouncyCastleProvider.PROVIDER_NAME);
+            ContentSigner signer = signerBuilder.build(caPrivKey);
+            X509CRLHolder crlHolder = crlBuilder.build(signer);
+
+            JcaX509CRLConverter converter = new JcaX509CRLConverter();
+
+            converter.setProvider(BouncyCastleProvider.PROVIDER_NAME);
+
+            return converter.getCRL(crlHolder).getEncoded();
+        } catch (KeyStoreException | OperatorCreationException | CRLException e) {
+            e.printStackTrace();
+        }
+
+        return null;
     }
 
     public static void initCertStructure() throws UnrecoverableEntryException, CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException {
