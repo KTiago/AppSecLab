@@ -11,6 +11,7 @@ import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.cert.*;
 import org.bouncycastle.cert.jcajce.*;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
@@ -165,12 +166,19 @@ public class CertStructure {
         }
     }
 
-    public byte[] getCRL() {
+    public String getCRL() {
         try {
-            return crlHolder.getEncoded();
-        } catch (IOException e) {
+            StringWriter sw = new StringWriter();
+            JcaPEMWriter pemW = new JcaPEMWriter(sw);
+            JcaX509CRLConverter converter = new JcaX509CRLConverter();
+            converter.setProvider(BouncyCastleProvider.PROVIDER_NAME);
+            X509CRL crl = converter.getCRL(crlHolder);
+            pemW.writeObject(crl);
+            pemW.close();
+            return sw.toString();
+        } catch (IOException | CRLException e) {
             CALogger.getInstance().log("exception while getting the CRL's bytes", e);
-            return new byte[0];
+            return "";
         }
     }
 
