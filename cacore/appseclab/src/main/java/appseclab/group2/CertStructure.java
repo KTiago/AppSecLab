@@ -249,22 +249,6 @@ public class CertStructure {
         }
     }
 
-    public List<String> getRevokedList() {
-        List<String> serials = new ArrayList<>();
-        Enumeration<String> aliases = null;
-        try {
-            aliases = revokedCerts.aliases();
-
-            while (aliases.hasMoreElements()) {
-                serials.add(aliases.nextElement());
-            }
-        } catch (KeyStoreException e) {
-            CALogger.getInstance().log("exception while computing the revocation list ", e);
-        }
-
-        return serials;
-    }
-
     public boolean isCertificateActive(String email) {
         try {
             return activeCerts.containsAlias(email);
