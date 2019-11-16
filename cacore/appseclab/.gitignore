@@ -8,3 +8,4 @@ certsWithKeys
 activeCert
 revokedCert
 runwithpass.sh
+check-crl/

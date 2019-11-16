@@ -71,6 +71,23 @@ public class HttpsServer extends NanoHTTPD {
         }
     }
 
+    public class JSONRevokeAnswer {
+        private Status status;
+        private String data = "";
+        private String crl = "";
+
+        public JSONRevokeAnswer(Status status, String data, String crl) {
+            this.status = status;
+            this.data = data;
+            this.crl = crl;
+        }
+
+        public String getJson() {
+            Gson gson = new Gson();
+            return gson.toJson(this);
+        }
+    }
+
     public class JSONCertAnswer {
         private Status status;
         private String data = "";
@@ -151,11 +168,6 @@ public class HttpsServer extends NanoHTTPD {
                     return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
                 }
 
-                File certFile = new File("certs/certGen");
-                if (certFile.exists()) {
-                    certFile.delete();
-                }
-
                 Map<String, String> body = new HashMap<>();
                 try {
                     session.parseBody(body);
@@ -222,7 +234,8 @@ public class HttpsServer extends NanoHTTPD {
                 }
 
                 if (CertStructure.getInstance().addRevokedCert(serialNumber)) {
-                    JSONAnswer ans = new JSONAnswer(Status.VALID, "Certificate successfully revoked");
+                    String crl = CertStructure.getInstance().getCRL();
+                    JSONRevokeAnswer ans = new JSONRevokeAnswer(Status.VALID, "Certificate successfully revoked", crl);
                     CALogger.getInstance().log("Certificate with serial number '" + serialNumber + "' as been revoked");
                     return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
                 } else {
@@ -230,35 +243,6 @@ public class HttpsServer extends NanoHTTPD {
                     CALogger.getInstance().log("Certificate can't be revoked");
                     return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
                 }
-            }
-            case "/revokeList": {
-                CALogger.getInstance().log("revokeList request received");
-                if (!Method.POST.equals(session.getMethod())) {
-                    JSONAnswer ans = new JSONAnswer(Status.INVALID, "POST Request needed for /revokeCert");
-                    CALogger.getInstance().log("revokeList request was not POST");
-                    return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
-                }
-
-                Map<String, String> body = new HashMap<>();
-                try {
-                    session.parseBody(body);
-                } catch (Exception e) {
-                    CALogger.getInstance().log("exception during parsing the body of revokeList request", e);
-                    JSONAnswer ans = new JSONAnswer(Status.INVALID, "error parsing body of /revokeList request");
-                    return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
-                }
-
-                JSONQuery q = gson.fromJson(body.get("postData"), JSONQuery.class);
-
-                if (!verifyPass(q.pw)) {
-                    JSONAnswer ans = new JSONAnswer(Status.INVALID, "Invalid identification");
-                    CALogger.getInstance().log("wrong token in the request");
-                    return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
-                }
-
-                JSONCertListAnswer revokedCert = new JSONCertListAnswer(Status.VALID, CertStructure.getInstance().getRevokedList());
-                CALogger.getInstance().log("revokeList sent");
-                return newFixedLengthResponse(Response.Status.OK, "application/json", revokedCert.getJson());
             }
             case "/getAdminInfos": {
                 CALogger.getInstance().log("getAdminInfos request received");

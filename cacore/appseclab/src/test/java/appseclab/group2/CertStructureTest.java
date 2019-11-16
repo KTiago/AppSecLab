@@ -46,9 +46,11 @@ public class CertStructureTest {
         environmentVariables.set("certsWithKeysFilename", "test_certsWithKeys");
         environmentVariables.set("revokedCertFilename", "test_revokedCert");
         environmentVariables.set("activeCertFilename", "test_activeCert");
+        environmentVariables.set("crlFilename", "test_revokedList.crl");
         environmentVariables.set("tlsPw", "wafwaf");
         environmentVariables.set("hostname", "");
         environmentVariables.set("port", "8080");
+        environmentVariables.set("debug", "true");
 
         //Delete all tests keyStores
         File activeCertsFile = new File(System.getenv("activeCertFilename"));
@@ -90,6 +92,11 @@ public class CertStructureTest {
         File certsWithKeysFile = new File(System.getenv("certsWithKeysFilename"));
         if(certsWithKeysFile.exists()) {
             certsWithKeysFile.delete();
+        }
+
+        File crlFile = new File(System.getenv("crlFilename"));
+        if(crlFile.exists()) {
+            crlFile.delete();
         }
     }
 
@@ -191,97 +198,5 @@ public class CertStructureTest {
         File certsWithKeysFile = new File(System.getenv("certsWithKeysFilename"));
         certsWithKeys.load(new FileInputStream(certsWithKeysFile), System.getenv("certsWithKeysPw").toCharArray());
         assertTrue(certsWithKeys.containsAlias(certSN));
-    }
-
-    @Test
-    public void getRevokedListTest() throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
-        //Map to store the serial number
-        Map<String,Boolean> serialMap = new HashMap<>();
-
-        String testEmail1 = "waffel1@wuffel.com", testName1 = "Cheers Mate", pw = "wafwaf";
-        Gson gson = new Gson();
-        HttpsServer.JSONCertQuery q = new HttpsServer.JSONCertQuery(testEmail1, testName1, pw);
-        String req = gson.toJson(q, HttpsServer.JSONCertQuery.class);
-
-        String ans = UtilsForTests.sendPayload("https://localhost:"+CACore.PORT_NUMBER+"/getCert", req,"POST");
-        HttpsServer.JSONAnswer in = gson.fromJson(ans, HttpsServer.JSONAnswer.class);
-        byte[] c = Base64.getDecoder().decode(in.getData());
-
-        KeyStore keystore = KeyStore.getInstance("PKCS12");
-        keystore.load(new ByteArrayInputStream(c), "".toCharArray());
-
-        X509Certificate cert = (X509Certificate) keystore.getCertificate(testEmail1);
-
-        //Add the serial number to the map, will be checked later
-        String sn1 = cert.getSerialNumber().toString();
-        serialMap.put(sn1, Boolean.TRUE);
-
-        String testEmail2 = "waffel2@wuffel.com", testName2 = "Cheers Mate";
-        gson = new Gson();
-        HttpsServer.JSONCertQuery q2 = new HttpsServer.JSONCertQuery(testEmail2, testName2, pw);
-        String req2 = gson.toJson(q2, HttpsServer.JSONCertQuery.class);
-
-        ans = UtilsForTests.sendPayload("https://localhost:"+CACore.PORT_NUMBER+"/getCert", req2, "POST");
-        in = gson.fromJson(ans, HttpsServer.JSONAnswer.class);
-        c = Base64.getDecoder().decode(in.getData());
-
-        keystore = KeyStore.getInstance("PKCS12");
-        keystore.load(new ByteArrayInputStream(c), "".toCharArray());
-
-        cert = (X509Certificate) keystore.getCertificate(testEmail2);
-
-        //Add the serial number to the map, will be checked later
-        String sn2 = cert.getSerialNumber().toString();
-        serialMap.put(sn2, Boolean.TRUE);
-
-        String testEmail3 = "waffel3@wuffel.com", testName3 = "Cheers Mate";
-        gson = new Gson();
-        HttpsServer.JSONCertQuery q3 = new HttpsServer.JSONCertQuery(testEmail3, testName3, pw);
-        String req3 = gson.toJson(q3, HttpsServer.JSONCertQuery.class);
-
-        ans = UtilsForTests.sendPayload("https://localhost:"+CACore.PORT_NUMBER+"/getCert", req3, "POST");
-        in = gson.fromJson(ans, HttpsServer.JSONAnswer.class);
-        c = Base64.getDecoder().decode(in.getData());
-
-        keystore = KeyStore.getInstance("PKCS12");
-        keystore.load(new ByteArrayInputStream(c), "".toCharArray());
-
-        cert = (X509Certificate) keystore.getCertificate(testEmail3);
-
-        //Add the serial number to the map, will be checked later
-        String sn3 = cert.getSerialNumber().toString();
-        serialMap.put(sn3, Boolean.TRUE);
-
-        //Revoke 1st, 2nd and 3rd certificate
-        HttpsServer.JSONRevokeQuery q4 = new HttpsServer.JSONRevokeQuery(sn1, pw);
-        String req4 = gson.toJson(q4, HttpsServer.JSONRevokeQuery.class);
-
-        UtilsForTests.sendPayload("https://localhost:"+CACore.PORT_NUMBER+"/revokeCert", req4, "POST");
-
-        HttpsServer.JSONRevokeQuery q5 = new HttpsServer.JSONRevokeQuery(sn2, pw);
-        String req5 = gson.toJson(q5, HttpsServer.JSONRevokeQuery.class);
-
-        UtilsForTests.sendPayload("https://localhost:"+CACore.PORT_NUMBER+"/revokeCert", req5, "POST");
-
-        HttpsServer.JSONRevokeQuery q6 = new HttpsServer.JSONRevokeQuery(sn3, pw);
-        String req6 = gson.toJson(q6, HttpsServer.JSONRevokeQuery.class);
-
-        UtilsForTests.sendPayload("https://localhost:"+CACore.PORT_NUMBER+"/revokeCert", req6, "POST");
-
-
-        HttpsServer.JSONQuery q7 = new HttpsServer.JSONQuery(pw);
-        String req7 = gson.toJson(q7, HttpsServer.JSONQuery.class);
-        ans = UtilsForTests.sendPayload("https://localhost:"+CACore.PORT_NUMBER+"/revokeList", req7, "POST");
-        HttpsServer.JSONCertListAnswer inL = gson.fromJson(ans, HttpsServer.JSONCertListAnswer.class);
-
-        List<String> serials = inL.getList();
-        assertTrue(serials.size() == serialMap.size());
-
-        for (String s : serials) {
-            assertTrue(serialMap.containsKey(s));
-        }
-
-        //We revoked 3 certificates
-        assertTrue(serialMap.size() == 3);
     }
 }
