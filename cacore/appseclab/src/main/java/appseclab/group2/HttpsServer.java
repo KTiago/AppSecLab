@@ -234,8 +234,7 @@ public class HttpsServer extends NanoHTTPD {
                 }
 
                 if (CertStructure.getInstance().addRevokedCert(serialNumber)) {
-                    byte[] crlByte = CertStructure.getInstance().getCRL();
-                    String crl = java.util.Base64.getEncoder().withoutPadding().encodeToString(crlByte);
+                    String crl = CertStructure.getInstance().getCRL();
                     JSONRevokeAnswer ans = new JSONRevokeAnswer(Status.VALID, "Certificate successfully revoked", crl);
                     CALogger.getInstance().log("Certificate with serial number '" + serialNumber + "' as been revoked");
                     return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
