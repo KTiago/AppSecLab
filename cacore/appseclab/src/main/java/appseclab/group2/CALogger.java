@@ -11,17 +11,19 @@ public class CALogger {
 
     private CALogger() throws IOException {
         FileHandler fh;
-        ConsoleHandler ch;
         fh = new FileHandler("cacore.log", true);
         fh.setFormatter(new SimpleFormatter());
         fh.setLevel(Level.ALL);
-
-        ch = new ConsoleHandler();
-        ch.setFormatter(new SimpleFormatter());
-        ch.setLevel(Level.ALL);
-
         logger.addHandler(fh);
-        logger.addHandler(ch);
+
+        if(System.getenv("debug").equals("true")) {
+            ConsoleHandler ch;
+            ch = new ConsoleHandler();
+            ch.setFormatter(new SimpleFormatter());
+            ch.setLevel(Level.ALL);
+            logger.addHandler(ch);
+        }
+
         logger.setUseParentHandlers(false);
         logger.setLevel(Level.ALL);
     }

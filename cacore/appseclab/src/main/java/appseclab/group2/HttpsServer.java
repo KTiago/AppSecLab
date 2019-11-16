@@ -168,11 +168,6 @@ public class HttpsServer extends NanoHTTPD {
                     return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
                 }
 
-                File certFile = new File("certs/certGen");
-                if (certFile.exists()) {
-                    certFile.delete();
-                }
-
                 Map<String, String> body = new HashMap<>();
                 try {
                     session.parseBody(body);

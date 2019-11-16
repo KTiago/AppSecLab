@@ -89,6 +89,7 @@ public class CertStructure {
 
         caPrivKey = (PrivateKey)rootStore.getKey(INTERMEDIATE_CA_ALIAS, INTERMEDIATE_CA_PASSWORD.toCharArray());
         caCert = (X509Certificate) rootStore.getCertificate(INTERMEDIATE_CA_ALIAS);
+        rootStore.getCertificate(INTERMEDIATE_CA_ALIAS);
 
         //Get the keyStore ready
         activeCerts = KeyStore.getInstance("PKCS12");
@@ -160,7 +161,7 @@ public class CertStructure {
             outStream.write(crlHolder.getEncoded());
             outStream.close();
         } catch (OperatorCreationException | IOException e) {
-            e.printStackTrace();
+            CALogger.getInstance().log("exception during the CRL update", e);
         }
     }
 
@@ -168,8 +169,8 @@ public class CertStructure {
         try {
             return crlHolder.getEncoded();
         } catch (IOException e) {
-            e.printStackTrace();
-            return null;
+            CALogger.getInstance().log("exception while getting the CRL's bytes", e);
+            return new byte[0];
         }
     }
 
@@ -187,16 +188,8 @@ public class CertStructure {
         try {
             activeCerts.setCertificateEntry(getEmailFromCert(crt), crt);
             activeCerts.store(new FileOutputStream(activeCertFilename), "".toCharArray());
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
-        } catch (CertificateException e) {
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (KeyStoreException | CertificateException | NoSuchAlgorithmException | IOException e) {
+            CALogger.getInstance().log("exception while adding a new certificate to the activeCert KeyStore", e);
         }
     }
 
@@ -212,7 +205,7 @@ public class CertStructure {
                 }
             }
         } catch (KeyStoreException e) {
-            e.printStackTrace();
+            CALogger.getInstance().log("exception when fetching the email from the serial number", e);
         }
 
         return null;
@@ -233,16 +226,8 @@ public class CertStructure {
             revokedCertNumber++;
             updateCRL(new BigInteger(serialNumber));
             return true;
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
-        } catch (CertificateException e) {
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (KeyStoreException | CertificateException | NoSuchAlgorithmException | IOException e) {
+            CALogger.getInstance().log("exception while adding a new certificate to the revokedCert KeyStore", e);
         }
         return false;
     }
@@ -251,16 +236,8 @@ public class CertStructure {
         try {
             certsWithKeys.setKeyEntry(chain[0].getSerialNumber().toString(), key, "".toCharArray(),chain);
             certsWithKeys.store(new FileOutputStream(certsWithKeysFilename), certsWithKeysPw.toCharArray());
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
-        } catch (CertificateException e) {
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (KeyStoreException | CertificateException | NoSuchAlgorithmException | IOException e) {
+            CALogger.getInstance().log("exception while adding a certificate to the certWithKeys KeyStore", e);
         }
     }
 
@@ -274,7 +251,7 @@ public class CertStructure {
                 serials.add(aliases.nextElement());
             }
         } catch (KeyStoreException e) {
-            e.printStackTrace();
+            CALogger.getInstance().log("exception while computing the revocation list ", e);
         }
 
         return serials;
@@ -284,7 +261,7 @@ public class CertStructure {
         try {
             return activeCerts.containsAlias(email);
         } catch (KeyStoreException e) {
-            e.printStackTrace();
+            CALogger.getInstance().log("exception during active certificate verification", e);
         }
 
         return false;
@@ -294,7 +271,7 @@ public class CertStructure {
         try {
             return revokedCerts.containsAlias(serialNumber);
         } catch (KeyStoreException e) {
-            e.printStackTrace();
+            CALogger.getInstance().log("exception during revoke certificate verification", e);
         }
 
         //If the above check threw an exception, it shouldn't be treated as valid
@@ -318,10 +295,11 @@ public class CertStructure {
         try {
             X500Name x500name = new JcaX509CertificateHolder(crt).getSubject();
             cn = x500name.getRDNs(BCStyle.CN)[0];
+            return IETFUtils.valueToString(cn.getFirst().getValue());
         } catch (CertificateEncodingException e) {
-            e.printStackTrace();
+            CALogger.getInstance().log("exception while fetching email from the certificate", e);
         }
-        return IETFUtils.valueToString(cn.getFirst().getValue());
+        return null;
     }
 
     public CertTuple createCert(String email, String name) {
@@ -330,50 +308,36 @@ public class CertStructure {
         KeyPairGenerator keyGen = null;
         try {
             keyGen = KeyPairGenerator.getInstance("RSA");
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        }
+            keyGen.initialize(KEY_SIZE, new SecureRandom());
+            keyPair = keyGen.generateKeyPair();
 
-        keyGen.initialize(KEY_SIZE, new SecureRandom());
-        keyPair = keyGen.generateKeyPair();
+            X500NameBuilder nameBuilder = new X500NameBuilder();
+            nameBuilder.addRDN(BCStyle.CN, email);
+            nameBuilder.addRDN(BCStyle.OU, name);
 
-        X500NameBuilder nameBuilder = new X500NameBuilder();
-        nameBuilder.addRDN(BCStyle.CN, email);
-        nameBuilder.addRDN(BCStyle.OU, name);
+            ZoneOffset zoneOffSet = ZoneId.of("Europe/Zurich").getRules().getOffset(LocalDateTime.now());
 
-        ZoneOffset zoneOffSet = ZoneId.of("Europe/Zurich").getRules().getOffset(LocalDateTime.now());
+            BigInteger sn = getNewSerialNumber();
+            X509v3CertificateBuilder v3CertBuilder = new JcaX509v3CertificateBuilder(
+                    JcaX500NameUtil.getSubject(caCert),
+                    sn,
+                    Date.from(LocalDateTime.now().toInstant(zoneOffSet)),
+                    Date.from(LocalDateTime.now().plusDays(VALIDITY).toInstant(zoneOffSet)),
+                    nameBuilder.build(),
+                    keyPair.getPublic()
+            );
 
-        BigInteger sn = getNewSerialNumber();
-        X509v3CertificateBuilder v3CertBuilder = new JcaX509v3CertificateBuilder(
-                JcaX500NameUtil.getSubject(caCert),
-                sn,
-                Date.from(LocalDateTime.now().toInstant(zoneOffSet)),
-                Date.from(LocalDateTime.now().plusDays(VALIDITY).toInstant(zoneOffSet)),
-                nameBuilder.build(),
-                keyPair.getPublic()
-        );
-
-        try {
             v3CertBuilder.addExtension(Extension.basicConstraints, false, new BasicConstraints(false));
             v3CertBuilder.addExtension(Extension.keyUsage, true, new KeyUsage(KeyUsage.nonRepudiation | KeyUsage.digitalSignature | KeyUsage.keyEncipherment));
             v3CertBuilder.addExtension(Extension.extendedKeyUsage, false, new ExtendedKeyUsage(new KeyPurposeId[]{KeyPurposeId.id_kp_clientAuth, KeyPurposeId.id_kp_emailProtection}));
-        } catch (CertIOException e) {
-            e.printStackTrace();
-        }
 
-        X509CertificateHolder certHolder = null;
-        X509Certificate newCert = null;
-        try {
+            X509CertificateHolder certHolder = null;
+            X509Certificate newCert = null;
+
             certHolder = v3CertBuilder.build(new JcaContentSignerBuilder(SIG_ALG).setProvider(BouncyCastleProvider.PROVIDER_NAME).build(caPrivKey));
             newCert = new JcaX509CertificateConverter().setProvider(BouncyCastleProvider.PROVIDER_NAME).getCertificate(certHolder);
-        } catch (OperatorCreationException e) {
-            e.printStackTrace();
-        } catch (CertificateException e) {
-            e.printStackTrace();
-        }
 
-        KeyStore keystore = null;
-        try {
+            KeyStore keystore = null;
             keystore = KeyStore.getInstance("PKCS12");
             keystore.load(null, null);
 
@@ -389,26 +353,16 @@ public class CertStructure {
             CertStructure.getInstance().addKeyCert(chain, keyPair.getPrivate());
             issuedCertNumber++;
 
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (CertificateException e) {
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
-        }
-
-        try {
             File cert =  new File("certs/certGen");
             CALogger.getInstance().log("Certificate created for '" + name + "' with email '" + email + "'");
-            return new CertTuple(Files.readAllBytes(cert.toPath()), sn.toString());
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+
+            CertTuple res = new CertTuple(Files.readAllBytes(cert.toPath()), sn.toString());
+            if (cert.exists()) {
+                cert.delete();
+            }
+            return res;
+        } catch (NoSuchAlgorithmException | KeyStoreException | CertificateException | OperatorCreationException | IOException e) {
+            CALogger.getInstance().log("exception during certificate creation", e);
         }
 
         return null;
