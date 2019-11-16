@@ -71,6 +71,23 @@ public class HttpsServer extends NanoHTTPD {
         }
     }
 
+    public class JSONRevokeAnswer {
+        private Status status;
+        private String data = "";
+        private String crl = "";
+
+        public JSONRevokeAnswer(Status status, String data, String crl) {
+            this.status = status;
+            this.data = data;
+            this.crl = crl;
+        }
+
+        public String getJson() {
+            Gson gson = new Gson();
+            return gson.toJson(this);
+        }
+    }
+
     public class JSONCertAnswer {
         private Status status;
         private String data = "";
@@ -222,7 +239,9 @@ public class HttpsServer extends NanoHTTPD {
                 }
 
                 if (CertStructure.getInstance().addRevokedCert(serialNumber)) {
-                    JSONAnswer ans = new JSONAnswer(Status.VALID, "Certificate successfully revoked");
+                    byte[] crlByte = CertStructure.getInstance().getCRL();
+                    String crl = java.util.Base64.getEncoder().withoutPadding().encodeToString(crlByte);
+                    JSONRevokeAnswer ans = new JSONRevokeAnswer(Status.VALID, "Certificate successfully revoked", crl);
                     CALogger.getInstance().log("Certificate with serial number '" + serialNumber + "' as been revoked");
                     return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
                 } else {
