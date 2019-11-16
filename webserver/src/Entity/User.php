@@ -3,11 +3,13 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\UserInterface;
 
 /**
  * @ORM\Table(name="users")
  * @ORM\Entity(repositoryClass="App\Repository\UserRepository")
+ * @UniqueEntity("email")
  */
 class User implements UserInterface
 {
@@ -105,22 +107,24 @@ class User implements UserInterface
 
     public function removeSn(int $sn): self
     {
-        $key = $this->hasSn($sn);
-
-        // Fix because since key can be 0 and 0 == false...
-        if (is_bool($key) && !$key) {
+        if (!$this->hasSn($sn)) {
             throw new \InvalidArgumentException("Invalid SN value");
         }
 
+        $key = $this->getSnKey($sn);
         $current = $this->getSn();
         unset($current[$key]);
 
         return $this->setSn($current);
     }
 
+    private function getSnKey(int $sn) {
+        return array_search($sn, $this->getSn());
+    }
+
     public function hasSn(int $sn)
     {
-        return array_search($sn, $this->getSn());
+        return in_array($sn, $this->getSn());
     }
 
     /**

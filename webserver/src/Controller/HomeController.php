@@ -26,4 +26,11 @@ class HomeController extends AbstractController
 
         return new JsonResponse($list);
     }
+
+    /**
+     * @Route("/login_certificate", name="login_certificate")
+     */
+    public function showLoginCertificate() {
+        return $this->redirectToRoute('user_home');
+    }
 }

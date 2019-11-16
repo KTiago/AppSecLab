@@ -14,7 +14,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Routing\Annotation\Route;
 
-class UserController extends AbstractController
+class UserController extends AbstractController implements CertificateAuthenticationController
 {
     /**
      * @Route("/user/", name="user_home")
@@ -31,11 +31,13 @@ class UserController extends AbstractController
      */
     public function update(Request $request)
     {
+        /** @var User $user */
         $user = $this->getUser();
         $form = $this->createForm(
             UserType::class,
             $user
         );
+        $oldMail = $user->getEmail();
 
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
@@ -47,13 +49,21 @@ class UserController extends AbstractController
             $encoded = $encoder->encodePassword($user->getPassword(), null);
             $user->setPwd($encoded);
 
-            // Fetch certificate
-            $data = CertificateManager::requestCertificate($user);
-            $certificate = $data["data"];
-            $sn = $data["sn"];
+            $canDownloadCertificate = ($user->getEmail() != $oldMail) || (empty($user->getSn()));
 
-            // Add the new sn to the user
-            $user->addSn($sn);
+            // If the mail has changed then we request a new certificate
+            if ($canDownloadCertificate) {
+                // Fetch certificate
+                $data = CertificateManager::requestCertificate($user);
+                $certificate = $data["data"];
+                $sn = $data["sn"];
+
+                // Add the new sn to the user
+                $user->addSn($sn);
+
+                // Decode the certificate
+                $certificate = base64_decode($certificate);
+            }
 
             // Save the user in the DB
             $entityManager = $this->getDoctrine()->getManager();
@@ -62,10 +72,11 @@ class UserController extends AbstractController
 
             $this->addFlash('success', 'Your personal data have been updated.');
 
-            // Decode the certificate
-            $certificate = base64_decode($certificate);
-
-            return $this->downloadCert($certificate, $user->getUsername());
+            if ($canDownloadCertificate) {
+                return $this->downloadCert($certificate, $user->getUsername());
+            } else {
+                return $this->redirectToRoute('user_home');
+            }
         }
 
         return $this->render('user/update_user_information.html.twig', [
@@ -99,16 +110,17 @@ class UserController extends AbstractController
         $user = $this->getUser();
 
         return $this->render('user/revoke_cert.html.twig', [
-           "sns" => $user->getSn()
+            "sns" => $user->getSn()
         ]);
     }
 
     /**
      * @Route("/user/revoke/{sn}", name="revoke_cert_sn", requirements={"page"="\d+"})
-     * @param int $sn, the serial number to be revoked
+     * @param int $sn , the serial number to be revoked
      * @return Response
      */
-    public function revokeCertWithSn(int $sn) {
+    public function revokeCertWithSn(int $sn)
+    {
         /** @var User $user */
         $user = $this->getUser();
 
@@ -117,7 +129,12 @@ class UserController extends AbstractController
             $user->removeSn($sn);
 
             // Revoke the cert
-            CertificateManager::revokeCertificate($sn);
+            $response = CertificateManager::revokeCertificate($sn);
+
+            $crl = $response['crl'];
+            $fw = new FileWriter();
+            $path = dirname(__DIR__) . "/..rev/revocation.crl";
+            $fw->write($path, $crl);
 
             // Save the user in the DB
             $entityManager = $this->getDoctrine()->getManager();

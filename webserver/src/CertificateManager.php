@@ -19,7 +19,7 @@ class CertificateManager
     private const GET_REVOKED_LIST_ENDPOINT = "/revokeList";
     private const REVOKE_CERTIFICATE_ENDPOINT = "/revokeCert";
     private const GET_ADMIN_INFO = "/getAdminInfos";
-    private const CERT_NAME = "/cacore.pem";
+    private const CERT_NAME = "/ca.cert.pem";
 
     public const STATUS_FIELD = "status";
     public const DATA_FIELD = "data";
@@ -60,8 +60,6 @@ class CertificateManager
         );
 
         self::checkValidity($response->toArray());
-
-        var_dump($response->toArray());
 
         return $response->toArray();
     }
@@ -125,7 +123,7 @@ class CertificateManager
 
         self::checkValidity($response->toArray());
 
-        return $response->toArray()[self::DATA_FIELD];
+        return $response->toArray();
     }
 
     public static function getAdminInfo()
