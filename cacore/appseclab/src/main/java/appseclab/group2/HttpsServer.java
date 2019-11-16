@@ -244,35 +244,6 @@ public class HttpsServer extends NanoHTTPD {
                     return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
                 }
             }
-            case "/revokeList": {
-                CALogger.getInstance().log("revokeList request received");
-                if (!Method.POST.equals(session.getMethod())) {
-                    JSONAnswer ans = new JSONAnswer(Status.INVALID, "POST Request needed for /revokeCert");
-                    CALogger.getInstance().log("revokeList request was not POST");
-                    return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
-                }
-
-                Map<String, String> body = new HashMap<>();
-                try {
-                    session.parseBody(body);
-                } catch (Exception e) {
-                    CALogger.getInstance().log("exception during parsing the body of revokeList request", e);
-                    JSONAnswer ans = new JSONAnswer(Status.INVALID, "error parsing body of /revokeList request");
-                    return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
-                }
-
-                JSONQuery q = gson.fromJson(body.get("postData"), JSONQuery.class);
-
-                if (!verifyPass(q.pw)) {
-                    JSONAnswer ans = new JSONAnswer(Status.INVALID, "Invalid identification");
-                    CALogger.getInstance().log("wrong token in the request");
-                    return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
-                }
-
-                JSONCertListAnswer revokedCert = new JSONCertListAnswer(Status.VALID, CertStructure.getInstance().getRevokedList());
-                CALogger.getInstance().log("revokeList sent");
-                return newFixedLengthResponse(Response.Status.OK, "application/json", revokedCert.getJson());
-            }
             case "/getAdminInfos": {
                 CALogger.getInstance().log("getAdminInfos request received");
                 if (!Method.POST.equals(session.getMethod())) {
