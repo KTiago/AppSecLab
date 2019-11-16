@@ -46,9 +46,11 @@ public class CertStructureTest {
         environmentVariables.set("certsWithKeysFilename", "test_certsWithKeys");
         environmentVariables.set("revokedCertFilename", "test_revokedCert");
         environmentVariables.set("activeCertFilename", "test_activeCert");
+        environmentVariables.set("crlFilename", "test_revokedList.crl");
         environmentVariables.set("tlsPw", "wafwaf");
         environmentVariables.set("hostname", "");
         environmentVariables.set("port", "8080");
+        environmentVariables.set("debug", "true");
 
         //Delete all tests keyStores
         File activeCertsFile = new File(System.getenv("activeCertFilename"));
@@ -90,6 +92,11 @@ public class CertStructureTest {
         File certsWithKeysFile = new File(System.getenv("certsWithKeysFilename"));
         if(certsWithKeysFile.exists()) {
             certsWithKeysFile.delete();
+        }
+
+        File crlFile = new File(System.getenv("crlFilename"));
+        if(crlFile.exists()) {
+            crlFile.delete();
         }
     }
 
