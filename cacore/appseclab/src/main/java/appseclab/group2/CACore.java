@@ -10,7 +10,13 @@ public class CACore {
     public static void main(String[] args) {
 
         Thread t = new Thread(() -> {
-                while(true){}
+            while(true){
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
         });
 
         //Init Logger Singleton
