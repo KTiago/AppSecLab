@@ -16,7 +16,6 @@ class CertificateManager
 {
     private const CA_CORE_URL = "https://localhost:8080";
     private const GET_CERTIFICATE_ENDPOINT = "/getCert";
-    private const GET_REVOKED_LIST_ENDPOINT = "/revokeList";
     private const REVOKE_CERTIFICATE_ENDPOINT = "/revokeCert";
     private const GET_ADMIN_INFO = "/getAdminInfos";
     private const CERT_NAME = "/ca.cert.pem";

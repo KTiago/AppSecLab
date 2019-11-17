@@ -42,11 +42,15 @@ class UserController extends AbstractController implements CertificateAuthentica
             $user
         );
         $oldMail = $user->getEmail();
+        $id = $user->getUid();
 
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
             /** @var User $user */
             $user = $form->getData();
+
+            // Enforce that the ID can't be change
+            $user->setUid($id);
 
             // Encode the password
             $encoder = new ShaPasswordEncoder();
