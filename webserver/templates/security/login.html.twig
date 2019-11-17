@@ -35,9 +35,9 @@
                             <input type="hidden" name="_csrf_token"
                                    value="{{ csrf_token('authenticate') }}">
 
-                            <button class="btn btn-lg btn-primary btn-block text-uppercase" type="submit">Sign in
-                            </button>
-                            <a href="{{ path('login_certificate') }}">Click here to login with your certificate</a>
+                            <button class="btn btn-lg btn-primary btn-block text-uppercase" type="submit">Sign in</button>
+                            <br />
+                            <a class="btn btn-dark btn-lg btn-block text-uppercase" role="button" href="{{ path('login_certificate') }}">Click here to login with your certificate</a>
                         </form>
                     </div>
                 </div>
