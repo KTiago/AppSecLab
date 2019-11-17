@@ -2,6 +2,8 @@
 
 {% block title %}Log in{% endblock %}
 
+ {% set activeLink = "login" %}
+
 {% block stylesheets %}
     {{ encore_entry_link_tags('css/login') }}
 {% endblock %}
@@ -35,6 +37,7 @@
 
                             <button class="btn btn-lg btn-primary btn-block text-uppercase" type="submit">Sign in
                             </button>
+                            <a href="{{ path('login_certificate') }}">Click here to login with your certificate</a>
                         </form>
                     </div>
                 </div>

@@ -3,11 +3,13 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\UserInterface;
 
 /**
  * @ORM\Table(name="users")
  * @ORM\Entity(repositoryClass="App\Repository\UserRepository")
+ * @UniqueEntity("email")
  */
 class User implements UserInterface
 {
@@ -22,6 +24,11 @@ class User implements UserInterface
      * @ORM\Column(type="json")
      */
     private $roles = [];
+
+    /**
+     * @ORM\Column(type="json")
+     */
+    private $sn = [];
 
     /**
      * @var string The hashed password
@@ -76,6 +83,48 @@ class User implements UserInterface
         $this->roles = $roles;
 
         return $this;
+    }
+
+    public function getSn(): array
+    {
+        return (array)$this->sn;
+    }
+
+    public function setSn(array $sn): self
+    {
+        $this->sn = $sn;
+
+        return $this;
+    }
+
+    public function addSn(int $sn): self
+    {
+        $current = $this->getSn();
+        array_push($current, $sn);
+
+        return $this->setSn($current);
+    }
+
+    public function removeSn(int $sn): self
+    {
+        if (!$this->hasSn($sn)) {
+            throw new \InvalidArgumentException("Invalid SN value");
+        }
+
+        $key = $this->getSnKey($sn);
+        $current = $this->getSn();
+        unset($current[$key]);
+
+        return $this->setSn($current);
+    }
+
+    private function getSnKey(int $sn) {
+        return array_search($sn, $this->getSn());
+    }
+
+    public function hasSn(int $sn)
+    {
+        return in_array($sn, $this->getSn());
     }
 
     /**
@@ -134,11 +183,13 @@ class User implements UserInterface
         return $this->uid;
     }
 
-    public function setUsername(string $username) {
+    public function setUsername(string $username)
+    {
         return $this->setUid($username);
     }
 
-    public function setPassword(string $password) {
+    public function setPassword(string $password)
+    {
         return $this->setPwd($password);
     }
 

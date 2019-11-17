@@ -10,16 +10,8 @@
         <div class="card">
             <div class="card-header">Update my information</div>
             <div class="card-body">
-                <p class="card-text">Update your personal information via our web-based form.</p>
+                <p class="card-text">Update your personal information via our web-based form. Upon completion you will receive the certificate along with your private key.</p>
                 <a href="{{ path('update_user_information') }}" class="btn btn-primary">Go</a>
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-header">Download a certificate</div>
-            <div class="card-body">
-                <p class="card-text">Download the certificate from here. Please note that the private key cannot be
-                    downloaded.</p>
-                <a href="#" class="btn btn-primary">Download</a>
             </div>
         </div>
         <div class="text-white bg-danger card">
@@ -32,7 +24,7 @@
                     <br/>
                     <strong>WARNING! This operation is irreversible.</strong>
                 </p>
-                <a href="#" class="btn btn-light">Revoke</a>
+                <a href="{{ path('revoke_user_certificate') }}" class="btn btn-light">Revoke</a>
             </div>
         </div>
     </div>

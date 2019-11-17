@@ -1,5 +1,7 @@
 {% extends "base.html.twig" %}
 
+{% set activeLink = "admin" %}
+
 {% block body %}
     <div class="container">
         <br />
@@ -9,7 +11,13 @@
             </div>
         {% endfor %}
         <h1>iMovie's administrator interface</h1>
-        <p>Blablalbalbalba</p>
+        <p>
+            <strong>Number of certificates issued : </strong>{{ issuedCert }}
+            <br />
+            <strong>Number of revoked issued : </strong>{{ revokedCert }}
+            <br />
+            <strong>Serial number : </strong>{{ sn }}
+        </p>
     </div>
 {% endblock %}
 

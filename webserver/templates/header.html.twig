@@ -1,15 +1,3 @@
-{% set currentPath = path(app.request.attributes.get('_route'))|trim('/') %}
-
-{% if currentPath|slice(0,1) == "u" %}
-    {% set activeLink = "user" %}
-{% elseif currentPath|slice(0,1) == "a" %}
-    {% set activeLink = "admin" %}
-{% elseif currentPath|slice(0,1) == "l" %}
-    {% set activeLink = "login" %}
-{% else %}
-    {% set activeLink = "home" %}
-{% endif %}
-
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <a class="navbar-brand" href="{{ path("home") }}">
         iMovie

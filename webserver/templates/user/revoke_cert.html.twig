@@ -1,0 +1,22 @@
+{% extends "user/user_base.html.twig" %}
+
+{% block title %}User portal - iMovie{% endblock %}
+
+{% block user_body %}
+    <h1>Certificate revocation</h1>
+    <p>Click on a certificate serial number to revoke it</p>
+
+    {% if sns|length == 0 %}
+        <strong>You have no current active certificate!</strong>
+        <br />
+    {% else %}
+        <ul>
+            {% for sn in sns %}
+                <li>Certificate n°<a onclick="return confirm('This action is irreversible, are you sure?')" href="{{ path('revoke_cert_sn', {sn: sn}) }}">{{ sn }}</a></li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <a href="{{ path('user_home') }}">Back to your homepage</a>
+{% endblock %}
+
