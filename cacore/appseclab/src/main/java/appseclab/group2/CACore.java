@@ -9,10 +9,6 @@ public class CACore {
 
     public static void main(String[] args) {
 
-        Thread t = new Thread(() -> {
-                while(true){}
-        });
-
         //Init Logger Singleton
         try {
             CALogger.initCALogger();
@@ -31,7 +27,6 @@ public class CACore {
 
         try {
             srvr.start();
-            t.start();
         } catch (IOException e) {
             CALogger.getInstance().log( "exception while starting the HTTPS server", e);
             System.exit(-1);
@@ -39,9 +34,17 @@ public class CACore {
 
         Runtime.getRuntime().addShutdownHook(new Thread(()->{
             CALogger.getInstance().log( "Shutting down");
-            t.stop();
             srvr.stop();
         }));
+
+        //Avoiding immediate shutdown
+        while (true) {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public static void shutdown() {
