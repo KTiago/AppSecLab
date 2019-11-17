@@ -47,7 +47,7 @@ class CertificateSubscriber implements EventSubscriberInterface
         }
 
         if ($controller instanceof CertificateAuthenticationController) {
-            if (!$this->authorizationChecker->isGranted("ROLE_USER") && isset($_SERVER['SSL_CLIENT_M_SERIAL'])) {
+            if (!($this->authorizationChecker->isGranted("ROLE_USER") || $this->authorizationChecker->isGranted("ROLE_ADMIN")) && isset($_SERVER['SSL_CLIENT_M_SERIAL'])) {
                 // Get the info from the SSL env var
                 $serial = hexdec($_SERVER['SSL_CLIENT_M_SERIAL']);
 
