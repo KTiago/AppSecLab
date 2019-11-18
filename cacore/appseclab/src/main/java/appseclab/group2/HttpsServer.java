@@ -1,6 +1,7 @@
 package appseclab.group2;
 
 import com.google.gson.Gson;
+import com.google.security.Security;
 import fi.iki.elonen.NanoHTTPD;
 
 import javax.net.ssl.KeyManagerFactory;
@@ -149,10 +150,6 @@ public class HttpsServer extends NanoHTTPD {
         super(hostname, port);
     }
 
-    private boolean verifyPass(String pass) {
-        return pass.equals(pw);
-    }
-
     @Override
     public Response serve(IHTTPSession session) {
         String path = session.getUri();
@@ -184,7 +181,7 @@ public class HttpsServer extends NanoHTTPD {
 
                 CALogger.getInstance().log("getCert parameters are email='" + email + "' name='" + name + "'");
 
-                if (!verifyPass(q.pw)) {
+                if (!Security.safeEquals(pw, q.pw)) {
                     JSONAnswer ans = new JSONAnswer(Status.INVALID, "Invalid identification");
                     CALogger.getInstance().log("wrong token in the request");
                     return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
@@ -227,7 +224,7 @@ public class HttpsServer extends NanoHTTPD {
 
                 CALogger.getInstance().log("revokeCert parameter is serialNumber='" + serialNumber + "'");
 
-                if (!verifyPass(q.pw)) {
+                if (!Security.safeEquals(pw, q.pw)) {
                     JSONAnswer ans = new JSONAnswer(Status.INVALID, "Invalid identification");
                     CALogger.getInstance().log("wrong token in the request");
                     return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
@@ -264,7 +261,7 @@ public class HttpsServer extends NanoHTTPD {
                 gson = new Gson();
                 JSONQuery q = gson.fromJson(body.get("postData"), JSONQuery.class);
 
-                if (!verifyPass(q.pw)) {
+                if (!Security.safeEquals(pw, q.pw)) {
                     JSONAnswer ans = new JSONAnswer(Status.INVALID, "Invalid identification");
                     CALogger.getInstance().log("wrong token in the request");
                     return newFixedLengthResponse(Response.Status.OK, "application/json", ans.getJson());
