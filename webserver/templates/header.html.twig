@@ -15,10 +15,11 @@
                 <a class="nav-link" href="{{ path('revoked_list') }}">Download the revocation list</a>
             </li>
             {% if app.user %}
-                <li class="nav-item">
-                    <a class="nav-link {{ activeLink == "user" ? "active" }}" href="{{ path('user_home') }}">My account</a>
-                </li>
-                {% if is_granted("ROLE_ADMIN") %}
+		{% if is_granted("ROLE_USER") %}
+                    <li class="nav-item">
+                        <a class="nav-link {{ activeLink == "user" ? "active" }}" href="{{ path('user_home') }}">My account</a>
+                    </li>
+                {% elseif is_granted("ROLE_ADMIN") %}
                     <li class="nav-item">
                         <a class="nav-link {{ activeLink == "admin" ? "active" }}" href="{{ path('admin_home') }}">Administration</a>
                     </li>

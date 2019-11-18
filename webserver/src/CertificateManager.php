@@ -14,7 +14,7 @@ use Symfony\Component\HttpClient\HttpClient;
 
 class CertificateManager
 {
-    private const CA_CORE_URL = "https://localhost:8080";
+    private const CA_CORE_URL = "https://ca_core:8080";
     private const GET_CERTIFICATE_ENDPOINT = "/getCert";
     private const REVOKE_CERTIFICATE_ENDPOINT = "/revokeCert";
     private const GET_ADMIN_INFO = "/getAdminInfos";
@@ -42,8 +42,8 @@ class CertificateManager
                     "Content-Length" => strlen($payload)
                 ],
                 'body' => $payload,
-                'verify_peer' => 0,
-                'verify_host' => FALSE,
+                'verify_peer' => 1,
+                'verify_host' => TRUE,
                 'cafile' => $cert,
             ]
         )->toArray();
