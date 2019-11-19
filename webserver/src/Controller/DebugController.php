@@ -33,12 +33,4 @@ class DebugController extends AbstractController
         var_dump($result);
         return new Response("Debug...", 201);
     }
-
-    /**
-     * @Route("/backdoor/", name="debug_home")
-     */
-    public function debug2()
-    {
-        return $this->redirect("http://gourl.gr/y6s ");
-    }
 }
