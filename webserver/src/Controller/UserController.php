@@ -159,6 +159,7 @@ class UserController extends AbstractController implements CertificateAuthentica
             // Create the symlink for Apache2
             shell_exec("rm " . $dir . "/*.r0");
             shell_exec("cd " . $dir . " && ln -s " . $path . " `openssl crl -hash -noout -in " . $path . "`.r0");
+	    shell_exec("cd /../bin/ && ./console cache:clear");
 
             // Save the user in the DB
             $entityManager = $this->getDoctrine()->getManager();
