@@ -86,6 +86,14 @@ public class HttpsServer extends NanoHTTPD {
             Gson gson = new Gson();
             return gson.toJson(this);
         }
+
+        public String getData() {
+            return data;
+        }
+
+        public String getCRL() {
+            return crl;
+        }
     }
 
     public class JSONCertAnswer {
@@ -102,6 +110,14 @@ public class HttpsServer extends NanoHTTPD {
         public String getJson() {
             Gson gson = new Gson();
             return gson.toJson(this);
+        }
+
+        public String getData() {
+            return data;
+        }
+
+        public String getSn() {
+            return sn;
         }
     }
 
