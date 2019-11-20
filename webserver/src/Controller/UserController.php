@@ -16,12 +16,19 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class UserController extends AbstractController implements CertificateAuthenticationController
 {
+    private $certificateManager;
+
+    public function __construct()
+    {
+        $this->certificateManager = new CertificateManager();
+    }
+
     /**
      * @Route("/user/", name="user_home")
      */
     public function index()
     {
-        $this->denyAccessUnlessGranted('ROLE_USER', null, 'You must be logged in o access this page!');
+        $this->denyAccessUnlessGranted('ROLE_USER', null, 'You must be logged in to access this page!');
 
         return $this->render('user/user_home.html.twig');
     }
@@ -33,7 +40,7 @@ class UserController extends AbstractController implements CertificateAuthentica
      */
     public function update(Request $request)
     {
-        $this->denyAccessUnlessGranted('ROLE_USER', null, 'You must be logged in o access this page!');
+        $this->denyAccessUnlessGranted('ROLE_USER', null, 'You must be logged in to access this page!');
 
         /** @var User $user */
         $user = $this->getUser();
@@ -42,11 +49,15 @@ class UserController extends AbstractController implements CertificateAuthentica
             $user
         );
         $oldMail = $user->getEmail();
+        $id = $user->getUid();
 
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
             /** @var User $user */
             $user = $form->getData();
+
+            // Enforce that the ID can't be change
+            $user->setUid($id);
 
             // Encode the password
             $encoder = new ShaPasswordEncoder();
@@ -58,7 +69,7 @@ class UserController extends AbstractController implements CertificateAuthentica
             // If the mail has changed then we request a new certificate
             if ($canDownloadCertificate) {
                 // Fetch certificate
-                $data = CertificateManager::requestCertificate($user);
+                $data = $this->certificateManager->requestCertificate($user);
                 $certificate = $data["data"];
                 $sn = $data["sn"];
 
@@ -110,7 +121,7 @@ class UserController extends AbstractController implements CertificateAuthentica
      */
     public function revokeCert()
     {
-        $this->denyAccessUnlessGranted('ROLE_USER', null, 'You must be logged in o access this page!');
+        $this->denyAccessUnlessGranted('ROLE_USER', null, 'You must be logged in to access this page!');
 
         /** @var User $user */
         $user = $this->getUser();
@@ -127,7 +138,7 @@ class UserController extends AbstractController implements CertificateAuthentica
      */
     public function revokeCertWithSn(int $sn)
     {
-        $this->denyAccessUnlessGranted('ROLE_USER', null, 'You must be logged in o access this page!');
+        $this->denyAccessUnlessGranted('ROLE_USER', null, 'You must be logged int o access this page!');
 
         /** @var User $user */
         $user = $this->getUser();
@@ -137,7 +148,7 @@ class UserController extends AbstractController implements CertificateAuthentica
             $user->removeSn($sn);
 
             // Revoke the cert
-            $response = CertificateManager::revokeCertificate($sn);
+            $response = $this->certificateManager->revokeCertificate($sn);
 
             $crl = $response['crl'];
             $fw = new FileWriter();
@@ -148,6 +159,7 @@ class UserController extends AbstractController implements CertificateAuthentica
             // Create the symlink for Apache2
             shell_exec("rm " . $dir . "/*.r0");
             shell_exec("cd " . $dir . " && ln -s " . $path . " `openssl crl -hash -noout -in " . $path . "`.r0");
+	    shell_exec("cd /../bin/ && ./console cache:clear");
 
             // Save the user in the DB
             $entityManager = $this->getDoctrine()->getManager();
